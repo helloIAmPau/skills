@@ -1,9 +1,15 @@
 ---
 name: code-style
-description: How JavaScript, SQL and tests are written in these repositories. The style is specific and unenforced — no arrow functions, no else, no ternaries, promise chains in services and async/await only in tests, comments that say why — and there is no linter to catch a deviation. Load before writing or reviewing any code in these repositories, and before judging a diff's style in a pull request.
+description: How **JavaScript** is written in these repositories — the language rules only; other languages have their own skills. The style is specific and unenforced — no arrow functions, no else, no ternaries, promise chains in services and async/await only in tests, comments that say why — and there is no linter to catch a deviation. Load before writing or reviewing any code in these repositories, and before judging a diff's style in a pull request.
 ---
 
-# Code style
+# Code style: JavaScript
+
+**This file is about JavaScript and nothing else.** SQL appears in it only as
+SQL written *from* JavaScript — how a query string is built and how values
+reach it. The `.sql` migration files, the CSS, the shell scripts and the
+Dockerfiles have conventions of their own, and none of them are here. A second
+language gets a second skill rather than a section in this one.
 
 **Read out of the code, not decided.** Every rule below was counted before it
 was written, and the counts are given so a reader can check. The code is the
@@ -24,18 +30,36 @@ against two others that share the style.
 in the sibling repositories either. A callback is a `function`:
 
 ```js
-return pool.query(text, values).then(function (result) {
-  return result.rows;
+return pool.query(text, values).then(function({ rows }) {
+  return rows;
 });
 ```
 
-- Anonymous expressions take a space: `function (request, response)`.
-- Named declarations do not: `export function serve(name, routes)`.
-- **They do not all agree.** One repository omits the space — `function()` —
-  and exports as `export const useAuth = function() {}` where the others write
-  `export function useAuth()`. Follow the repository you are in; match the file
-  you are editing before matching this page.
+- **No space before the parens, ever** — `function(request, response)`, the
+  same as a named declaration. Older files carry a spaced form; convert them
+  when you touch them.
+- Exports differ between repositories: `export function useAuth()` in some,
+  `export const useAuth = function() {}` in others. Match the file you are
+  editing before matching this page.
 - No classes anywhere.
+
+## Arguments
+
+**One or two. A third means an object.**
+
+```js
+export function mint({ userId, minutes, limit, window }) { ... }
+export function attach({ response, token, days }) { ... }
+```
+
+- A third positional is one nobody can read at the call site:
+  `attach(response, token, 30)` says nothing about what 30 is.
+- **Destructure what you came for.** A callback that wants one field takes one
+  field — `function({ rows })`, `function({ id })`. A query returning a single
+  row destructures the array, `function([ user ])`, which turns a
+  `rows.length === 0` check into `user == null` and reads better for it.
+- The exception is a signature you did not choose. Express middleware is
+  `function(request, response, next)` and stays that way.
 
 ## Control flow
 
@@ -63,9 +87,9 @@ tests.
 
 ```js
 // a service
-consume(token).then(function (userId) {
+consume(token).then(function(userId) {
   ...
-}).catch(function (failed) {
+}).catch(function(failed) {
   console.error('callback failed', failed);
 });
 
@@ -82,6 +106,11 @@ that reads.
 
 - `const` unless it is reassigned: **88 `const`, 1 `let`, 0 `var`.**
 - Two spaces. Single quotes. Semicolons.
+- **A template literal for anything that spans lines or interpolates** —
+  `` `${ base }/auth/callback?token=${ token }` ``, never `+` and never an
+  array joined on a newline. Spaces inside the braces, as everywhere else. A
+  single-line string with nothing to interpolate stays in single quotes:
+  backticks there are noise.
 - **Spaces inside array brackets**: `[ userId, hash(token) ]`,
   `const [ state, setState ] = useState('LOADING')`.
 - **Spaces inside JSX braces**: `{ children }`, `value={ value }`, and single
@@ -138,13 +167,15 @@ Node builtins carry the `node:` prefix — `node:crypto`, `node:test`,
 - Lowercase keywords, snake_case identifiers.
 - **Values are always parameters.** Interpolating into the text is a review
   blocker, not a style preference.
-- Long statements are concatenated one clause per line, so the shape of the
-  query is visible in the shape of the source:
+- **A statement spanning lines is a template literal**, one clause per line,
+  so the shape of the query is visible in the shape of the source:
 
   ```js
-  'update login_tokens set consumed_at = now() ' +
-  'where token_hash = $1 and consumed_at is null and expires_at > now() ' +
-  'returning user_id'
+  query(`
+    update login_tokens set consumed_at = now()
+    where token_hash = $1 and consumed_at is null and expires_at > now()
+    returning user_id
+  `, [ hash(token) ])
   ```
 
 - Migrations are numbered `.sql` files, applied once, never edited after they
@@ -171,3 +202,6 @@ Node builtins carry the `node:` prefix — `node:crypto`, `node:test`,
 - **Whether any of this should be enforced.** There is no linter. Adding one
   would catch the arrow function nobody meant to write, and would also have
   opinions of its own about every rule above.
+- **Every other language.** The `.sql` files, the CSS, the shell scripts and
+  the Dockerfiles are written to conventions nobody has written down. This file
+  deliberately does not reach for them.

@@ -12,7 +12,7 @@ what decides whether it is loaded at all.
 | Skill | Load it when |
 |---|---|
 | [`repo-workflow`](repo-workflow/SKILL.md) | Before creating a branch, committing, pushing, force-pushing, or opening a pull request. Issue first, one branch per issue, squash to one commit before pushing, open the PR and stop — review and merge belong to the repository owner. |
-| [`code-style`](code-style/SKILL.md) | Before writing or reviewing any code, and before calling a diff's style wrong in review. No arrow functions, no `else`, no ternaries, promise chains in services and `async`/`await` only in tests, and comments that say why. There is no linter; this is the whole of the enforcement. |
+| [`code-style`](code-style/SKILL.md) | Before writing or reviewing **JavaScript**, and before calling a diff's style wrong in review. No arrow functions, no space before a `function`'s parens, no `else`, no ternaries, at most two arguments, template literals for anything spanning lines, promise chains in services and `async`/`await` only in tests. There is no linter; this is the whole of the enforcement. |
 | [`agent-container`](agent-container/SKILL.md) | At the start of any session that will run the stack, use docker or compose, touch an `.env` file, run migrations or the suite, or edit an issue body. The docker CLI is missing, `/workdir` is a different path to the daemon, and `sleep` is blocked. |
 
 ## How a repository gets them
@@ -87,7 +87,9 @@ Some things that keep these useful:
   specifics — this container, these repositories, this failure that actually
   happened.
 - **One subject per skill.** Two subjects in one file means loading both to get
-  either, and the wrong one is noise at the moment it is least wanted.
+  either, and the wrong one is noise at the moment it is least wanted. A
+  language counts as a subject: `code-style` is JavaScript, and a second
+  language gets a second skill rather than a section.
 - **Point at siblings** rather than repeating them. Each of the two skills here
   ends up in the other's territory occasionally; each says so and moves on.
 - **The repository's own README wins.** A skill describes how work is done; a
