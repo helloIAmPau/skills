@@ -1,14 +1,17 @@
 ---
 name: repo-workflow
-description: Contribution workflow and agent-container setup for helloIAmPau's repositories. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request in these repos, and at the start of any session running inside the agent container. Covers issue-first branching, squash-before-push, one branch one commit, what gh can and cannot do, installing the docker CLI, the host path the daemon resolves bind mounts against, which env file to source, and handing files back to the person who owns them.
+description: The contribution workflow for helloIAmPau's repositories. An issue exists before work starts; one branch per issue, named after it; squash to a single commit before pushing; open a pull request and stop, because review and merge belong to the repository owner. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
 ---
 
 # Working in these repositories
 
-Two things this skill is for: the path a change takes from issue to merge, and
-what an agent needs to know about the container it is running in. The
-repository's own README is the contract and wins wherever the two differ — read
-it first, every session, because nothing you learned last time survived.
+The path a change takes from issue to merge. The repository's own README is the
+contract and wins wherever the two differ — read it first, every session,
+because nothing you learned last time survived.
+
+Working inside the agent container — the missing docker CLI, the host path the
+daemon resolves bind mounts against, which env file to source, file ownership,
+and what `gh` cannot do there — is the `agent-container` skill.
 
 ---
 
@@ -57,7 +60,9 @@ work actually was, and the branch's message is the one that survives.
 - **Rebase onto refreshed main, never merge main in.** History stays linear and
   the PR shows only its own work.
 - **Never merge, never approve.** Pull requests are approved and merged by the
-  repository owner and by nobody else. Open the PR and stop there.
+  repository owner and by nobody else. Open the PR and stop there. `gh`
+  authenticates as the owner and would let you — that it can is not that you
+  may.
 
 ## 3. Commit types
 
@@ -88,114 +93,7 @@ These are the repository's labels, and there are no others.
 
 ---
 
-## 6. The agent container
-
-### What is already there
-
-| | |
-|---|---|
-| `/workdir` | the repository, bind-mounted |
-| `/var/run/docker.sock` | the **host's** docker daemon |
-| user | `root` |
-| network | isolated from the Compose network; internet and host both reachable |
-| host address | `172.17.0.1` — the default gateway |
-| node | 20, so `node --test` needs `--experimental-websocket` |
-
-`sleep` is blocked in the agent shell. Wait on the thing itself:
-
-```sh
-curl --retry 60 --retry-delay 2 --retry-all-errors "$BASE_URL/api/health"
-```
-
-### What is missing
-
-The docker CLI. The daemon is the host's through the socket, so install the CLI
-and the compose plugin only:
-
-```sh
-apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list
-apt-get update -qq
-apt-get install -y -qq docker-ce-cli docker-compose-plugin
-```
-
-`psql` is not installed and is not needed — `npm run db` runs it in the
-container.
-
-### The path the daemon sees
-
-**This is the one that bites.** The socket is the host's daemon, so it resolves
-build contexts and bind mounts against the *host* filesystem — and `/workdir`
-is the repository only inside the container. Make the two agree, then work from
-the host path:
-
-```sh
-mkdir -p /home/helloiampau/develop
-ln -sfn /workdir /home/helloiampau/develop/<repo>
-cd /home/helloiampau/develop/<repo>
-```
-
-Running compose from `/workdir` is not a harmless alias: a host `/workdir`
-exists and belongs to something else. Doing it once pointed `./data/postgres`
-at a foreign PostgreSQL data directory and the container refused to start.
-Check a mount if anything looks wrong:
-
-```sh
-docker inspect <repo>-postgres-1 --format '{{range .Mounts}}{{.Source}}{{end}}'
-```
-
-### Which env file
-
-Source `.env.claude`, **never** `.env.develop`. `.env.claude` points the base
-URL at `172.17.0.1`, the only address this container can reach; `.env.develop`
-points at localhost. Starting the stack from the wrong one fails in a way that
-looks unrelated — Caddy matches on Host and 404s everything, or a magic-link
-test fails because the emailed link is unreachable.
-
-```sh
-cd /home/helloiampau/develop/<repo>
-source ./.env.claude
-export COMPOSE_FILE=docker-compose.yml:docker-compose.develop.yml
-
-docker compose up -d --build
-npm run migrate
-npm test
-docker compose down          # leave the host as it was found
-```
-
-### File ownership
-
-The agent is root and the person is not, so anything it creates lands owned by
-root and the person cannot edit it. Hand everything back:
-
-```sh
-chown -R node:users <paths>
-chown -h node:users data data/postgres   # -h: do not follow, they may be links
-```
-
-### What `gh` cannot do
-
-`gh` authenticates as the repository owner. Three limits:
-
-- **Merging.** Never. See §2.
-- **Pushing under `.github/workflows/`.** The token lacks the `workflow` scope
-  and the REST contents API refuses it too. The refresh is a device flow, so a
-  person must run it in their own shell:
-  `gh auth refresh --hostname github.com -s workflow`
-- **`gh pr edit` and `gh issue edit`** fail here with a Projects-classic
-  deprecation error. Edit bodies and titles through the REST API instead:
-  ```sh
-  gh api -X PATCH repos/<owner>/<repo>/pulls/<n> --input body.json
-  gh api -X PATCH repos/<owner>/<repo>/issues/<n> -f title='...'
-  ```
-
----
-
-## 7. Failure modes seen in practice
+## 6. Failure modes seen in practice
 
 Not in any README — these are mistakes that actually happened here.
 
