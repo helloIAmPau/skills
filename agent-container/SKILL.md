@@ -1,6 +1,6 @@
 ---
 name: agent-container
-description: What an agent needs to know about the container it is running in when working on helloIAmPau's repositories. The docker CLI is missing and the daemon is the host's; /workdir is a different path to that daemon, which breaks bind mounts silently; sleep is blocked; there are two env files and only one of them works from here; everything created lands owned by root; and gh cannot push workflows or edit an issue body. Load at the start of any session that will run the stack, use docker or compose, touch an .env file, run migrations or the test suite, or edit an issue or pull request body.
+description: What an agent needs to know about the container it is running in. The docker CLI is missing and the daemon is the host's; /workdir is a different path to that daemon, which breaks bind mounts silently; sleep is blocked; there are two env files and only one of them works from here; everything created lands owned by root; and gh cannot push workflows or edit an issue body. Load at the start of any session that will run the stack, use docker or compose, touch an .env file, run migrations or the test suite, or edit an issue or pull request body.
 ---
 
 # The agent container
@@ -58,6 +58,10 @@ mkdir -p /home/helloiampau/develop
 ln -sfn /workdir /home/helloiampau/develop/<repo>
 cd /home/helloiampau/develop/<repo>
 ```
+
+That path is this host's, not a convention. It is wherever the host bind-mounts
+the repository from, and `docker inspect` on a running container will show it if
+it is ever anything else.
 
 Running compose from `/workdir` is not a harmless alias: a host `/workdir`
 exists and belongs to something else. Doing it once pointed `./data/postgres`

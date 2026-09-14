@@ -1,6 +1,6 @@
 ---
 name: repo-workflow
-description: The contribution workflow for helloIAmPau's repositories. An issue exists before work starts; one branch per issue, named after it; squash to a single commit before pushing; open a pull request and stop, because review and merge belong to the repository owner. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
+description: The contribution workflow for these repositories. An issue exists before work starts; one branch per issue, named after it; squash to a single commit before pushing; open a pull request and stop, because review and merge belong to the repository owner. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
 ---
 
 # Working in these repositories
