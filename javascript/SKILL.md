@@ -61,6 +61,37 @@ export function attach({ response, token, days }) { ... }
 - The exception is a signature you did not choose. Express middleware is
   `function(request, response, next)` and stays that way.
 
+## Where a function lives
+
+**A function used in exactly one place is written in that place.**
+
+A named helper with a single caller costs a name to invent, a jump to follow
+and a second scope to hold — and buys nothing. The reader has to go and look at
+the body anyway, and the name is a summary that will go stale before the code
+it summarises does.
+
+```js
+// no: a helper nobody else calls
+function upsert(email, timezone) {
+  return query(`insert into users ...`, [ email, timezone ]);
+}
+
+upsert(email, timezone).then(function({ id }) { ... });
+
+// yes: the query, where it is wanted
+query(`
+  insert into users (email, timezone) values ($1, coalesce($2, 'UTC'))
+  on conflict (email) do update set timezone = coalesce($2, users.timezone)
+  returning id
+`, [ email, timezone || null ]).then(function([ { id } ]) { ... });
+```
+
+Extract when a **second** caller appears, not in anticipation of one.
+
+The exception is an exported interface. A library's `verify` having one caller
+today does not make it private — that is the shape the library offers, not an
+accident of who currently uses it.
+
 ## Control flow
 
 **Guard, then return. There is no `else` in the codebase, and no ternary.**
