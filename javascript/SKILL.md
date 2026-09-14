@@ -61,6 +61,33 @@ export function attach({ response, token, days }) { ... }
 - The exception is a signature you did not choose. Express middleware is
   `function(request, response, next)` and stays that way.
 
+## No operator stands in for a check
+
+**No optional chaining. No `??`.** Both hide which absence happened.
+
+```js
+// no: a missing body, a missing field and a field of the wrong type
+// all arrive here as the same empty string
+const email = String(request.body?.email ?? '').trim().toLowerCase();
+
+// yes: the check says what it accepts
+const body = request.body;
+let email = '';
+
+if (body != null && typeof body.email === 'string') {
+  email = body.email.trim().toLowerCase();
+}
+```
+
+The long form is longer, and it says three things the short one throws away:
+that a body might be absent, that the field might not be a string, and what
+happens when either is true. An operator that quietly handles absence is one
+that stops you asking which absence it was — and the answer is usually the
+thing worth knowing.
+
+The same objection applies one step later to a default: `?? ''` spends the last
+chance to say what was missing.
+
 ## Where a function lives
 
 **A function used in exactly one place is written in that place.**
@@ -94,7 +121,7 @@ accident of who currently uses it.
 
 ## Control flow
 
-**Guard, then return. There is no `else` in the codebase, and no ternary.**
+**Guard, then return.** There is no `else` in the codebase, and no ternary.
 
 ```js
 if (typeof token !== 'string') {
@@ -104,8 +131,13 @@ if (typeof token !== 'string') {
 const publicKey = Buffer.from(process.env.TOKEN_PUBLIC_KEY, 'base64').toString();
 ```
 
-- `== null` means *absent* — null or undefined and nothing else. Five uses, all
-  deliberate. `===` and `!==` are for comparing values.
+- **`if`, never a ternary.** A ternary is an expression pretending to be a
+  decision, and it stops reading as one the moment either branch grows. There
+  are none; keep it that way.
+- **Exact match always — `===` and `!==`.** The one exception is `== null`,
+  which is not a comparison: it asks *is this absent*, and the loose form is
+  the only one that answers null and undefined together. That is the whole of
+  the exception; `== 0` and `== ''` are not covered by it.
 - `try`/`catch` appears **once**, around `jwt.verify`, because that library
   throws for something ordinary: a caller who is not signed in. A catch is for
   converting someone else's exception into your own normal case, not for
