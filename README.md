@@ -12,6 +12,7 @@ what decides whether it is loaded at all.
 | Skill | Load it when |
 |---|---|
 | [`repo-workflow`](repo-workflow/SKILL.md) | Before creating a branch, committing, pushing, force-pushing, or opening a pull request. Issue first, one branch per issue, squash to one commit before pushing, open the PR and stop — review and merge belong to the repository owner. |
+| [`code-style`](code-style/SKILL.md) | Before writing or reviewing any code, and before calling a diff's style wrong in review. No arrow functions, no `else`, no ternaries, promise chains in services and `async`/`await` only in tests, and comments that say why. There is no linter; this is the whole of the enforcement. |
 | [`agent-container`](agent-container/SKILL.md) | At the start of any session that will run the stack, use docker or compose, touch an `.env` file, run migrations or the suite, or edit an issue body. The docker CLI is missing, `/workdir` is a different path to the daemon, and `sleep` is blocked. |
 
 ## How a repository gets them
@@ -44,6 +45,8 @@ skills/
   repo-workflow/
     SKILL.md
   agent-container/
+    SKILL.md
+  code-style/
     SKILL.md
 ```
 
