@@ -1,9 +1,9 @@
 ---
-name: code-style
+name: javascript
 description: How **JavaScript** is written in these repositories — the language rules only; other languages have their own skills. The style is specific and unenforced — no arrow functions, no else, no ternaries, promise chains in services and async/await only in tests, comments that say why — and there is no linter to catch a deviation. Load before writing or reviewing any code in these repositories, and before judging a diff's style in a pull request.
 ---
 
-# Code style: JavaScript
+# JavaScript
 
 **This file is about JavaScript and nothing else.** SQL appears in it only as
 SQL written *from* JavaScript — how a query string is built and how values
