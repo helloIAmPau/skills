@@ -1,6 +1,6 @@
 ---
 name: repo-workflow
-description: The contribution workflow for these repositories. An issue exists before work starts; one branch per issue, named after it; squash to a single commit before pushing; open a pull request and stop, because review and merge belong to the repository owner. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
+description: The contribution workflow for these repositories. An issue exists before work starts; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
 ---
 
 # Working in these repositories
@@ -21,22 +21,29 @@ and what `gh` cannot do there — is the `agent-container` skill.
 0.  an issue exists   the task is described and numbered before work starts
 1.  refresh main      git switch main && git pull --ff-only
 2.  branch per task   git switch -c <type>/<issue>-<short-slug>
-3.  implement         commit freely while the branch is open
-4.  squash the branch one commit, carrying the Closes #<issue> footer
-5.  push              git push -u origin <type>/<issue>-<short-slug>
-6.  open a PR         title in conventional-commit form; body says why
-7.  stop              review and merge are the owner's
+3.  implement         make the change, then stop — the owner reviews locally
+4.  commit on command only when the owner asks; one commit per branch,
+                      carrying the Closes #<issue> footer
+5.  push on command   git push -u origin <branch> — only when the owner asks
+6.  open a PR         only when the owner asks; title in conventional-commit
+                      form, body says why
+7.  merge             the owner squash-merges; you never merge
 ```
 
-Flatten the branch before pushing it:
+Steps 4, 5 and 6 each wait for an explicit word from the owner. Implement the
+change and stop; the owner reviews it locally before anything is committed, and
+again before it is pushed or a PR is opened. Do not run ahead of these gates.
+
+Keep the branch at **one commit**. When told to commit, amend the existing
+commit rather than stacking a new one — flatten with:
 
 ```sh
 git reset --soft main && git commit     # one commit, one message
 ```
 
-Squashing happens **on the branch, not at the merge button**. The PR is merged
-with a merge commit, so main carries the merge alongside the single commit the
-work actually was, and the branch's message is the one that survives.
+The branch reaches main as a single commit two ways at once: it already *is*
+one commit, and the owner **squash-merges** the PR. The branch's message is the
+one that survives into main.
 
 ## 2. Rules that are not negotiable
 
@@ -54,15 +61,21 @@ work actually was, and the branch's message is the one that survives.
   one more thing to keep in sync.
 - **One branch, one task, one commit.** A second concern appearing mid-branch
   gets its own issue and its own branch.
-- **`Closes #<issue>` goes in the commit**, not only the PR body. A merge
-  commit preserves the branch's message verbatim, so that footer is what closes
+- **Commit only on the owner's word.** Implement the change and stop. The owner
+  reviews it locally and tells you when to commit; until then the branch stays
+  uncommitted.
+- **Push and open the PR only on the owner's word.** Even with the commit made,
+  do not push or open a PR until the owner asks. Two separate gates — one before
+  committing, one before pushing — and the owner reviews at each.
+- **`Closes #<issue>` goes in the commit**, not only the PR body. A squash-merge
+  carries the branch's commit message into main, so that footer is what closes
   the issue. Repeating it in the PR body is harmless and useful during review.
 - **Rebase onto refreshed main, never merge main in.** History stays linear and
   the PR shows only its own work.
 - **Never merge, never approve.** Pull requests are approved and merged by the
-  repository owner and by nobody else. Open the PR and stop there. `gh`
-  authenticates as the owner and would let you — that it can is not that you
-  may.
+  repository owner and by nobody else — the owner squash-merges. Open the PR and
+  stop there. `gh` authenticates as the owner and would let you — that it can is
+  not that you may.
 
 ## 3. Commit types
 
@@ -105,8 +118,10 @@ Not in any README — these are mistakes that actually happened here.
   moved. Step 1 of §1 exists to catch exactly this.
 - **Do not wait on CI after pushing.** Push and move on; run the e2e suite
   locally instead of watching the Action.
-- **Do not ask for approval before writing code.** Write it, push it to the
-  open branch, and describe what changed.
+- **Do not ask for approval before writing code — do wait before committing.**
+  Write the code without asking. But stop at the commit gate: the owner reviews
+  locally first and says when to commit, and again before you push or open a PR.
+  Describe what changed while they review.
 - **Assert before you patch.** When rewriting a README or an issue body with a
   script, assert the old string is present before replacing it. A silent
   no-match leaves the document claiming something the code no longer does, and
