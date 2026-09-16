@@ -21,8 +21,9 @@ and what `gh` cannot do there — is the `agent-container` skill.
 0.  an issue exists   the task is described and numbered before work starts
 1.  plan together     read the issue; ask the owner for any implementation
                       detail still open; when it is all clear, write the plan
-                      into the issue body as a task list — then wait for the
-                      owner to approve it before any code
+                      into the issue body as a task list where each item spells
+                      out in detail what it will do — then wait for the owner to
+                      approve it before any code
 2.  refresh main      git switch main && git pull --ff-only
 3.  branch per task   git switch -c <type>/<issue>-<short-slug>
 4.  implement         work the issue's task list in order, one item at a time,
@@ -42,8 +43,11 @@ again before it is pushed or a PR is opened. Do not run ahead of these gates.
 Step 1 is a gate of its own, at the other end: **nothing is branched or written
 until the plan lives in the issue as a task list and the owner has approved it.**
 Read the issue, ask the owner about anything the implementation leaves open, and
-only once it is all clear turn the plan into a checklist on the issue body. Then
-wait for the owner's approval of that plan — a fourth explicit word, before the
+only once it is all clear turn the plan into a checklist on the issue body.
+**Each item spells out in detail what you will do** — which files and functions,
+what the change is, how you will verify it — so the owner is reviewing the
+intended work, not a bare title, before any of it happens. Then wait for the
+owner's approval of that plan — a fourth explicit word, before the
 commit, push and PR ones. Only on it do you branch and start, implementing the
 list one item at a time and checking each off as it lands. This is the one place
 questions belong — see §6.
@@ -71,8 +75,10 @@ one that survives into main.
   there is no issue, the task is not described well enough to start; write one.
 - **No approved plan, no code.** Before implementing, read the issue and ask the
   owner about anything the implementation leaves open. When it is all clear write
-  the plan into the issue as a task list, then **wait for the owner to approve
-  it** — branching and the first line of code both wait on that word. Once the
+  the plan into the issue as a task list whose every item spells out in detail
+  what it will do — enough for the owner to review the intended work before it
+  happens — then **wait for the owner to approve it** — branching and the first
+  line of code both wait on that word. Once the
   plan is approved, work the list without re-asking permission at every later
   step.
 - **One label per issue, and it is a Conventional Commit type.** The same word
