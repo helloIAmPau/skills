@@ -1,6 +1,6 @@
 ---
 name: repo-workflow
-description: The contribution workflow for these repositories. An issue exists before work starts; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
+description: The contribution workflow for these repositories. An issue exists before work starts; the plan is agreed with the owner and written into the issue as a task list before any code, then resolved task by task; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
 ---
 
 # Working in these repositories
@@ -19,20 +19,31 @@ and what `gh` cannot do there — is the `agent-container` skill.
 
 ```
 0.  an issue exists   the task is described and numbered before work starts
-1.  refresh main      git switch main && git pull --ff-only
-2.  branch per task   git switch -c <type>/<issue>-<short-slug>
-3.  implement         make the change, then stop — the owner reviews locally
-4.  commit on command only when the owner asks; one commit per branch,
+1.  plan together     read the issue; ask the owner for any implementation
+                      detail still open; when it is all clear, write the plan
+                      into the issue body as a task list
+2.  refresh main      git switch main && git pull --ff-only
+3.  branch per task   git switch -c <type>/<issue>-<short-slug>
+4.  implement         work the issue's task list in order, one item at a time,
+                      checking each off; then stop — the owner reviews locally
+5.  commit on command only when the owner asks; one commit per branch,
                       carrying the Closes #<issue> footer
-5.  push on command   git push -u origin <branch> — only when the owner asks
-6.  open a PR         only when the owner asks; title in conventional-commit
+6.  push on command   git push -u origin <branch> — only when the owner asks
+7.  open a PR         only when the owner asks; title in conventional-commit
                       form, body says why
-7.  merge             the owner squash-merges; you never merge
+8.  merge             the owner squash-merges; you never merge
 ```
 
-Steps 4, 5 and 6 each wait for an explicit word from the owner. Implement the
+Steps 5, 6 and 7 each wait for an explicit word from the owner. Implement the
 change and stop; the owner reviews it locally before anything is committed, and
 again before it is pushed or a PR is opened. Do not run ahead of these gates.
+
+Step 1 is a gate of its own, at the other end: **nothing is branched or written
+until the plan is agreed and lives in the issue as a task list.** Read the issue,
+ask the owner about anything the implementation leaves open, and only once it is
+all clear turn the plan into a checklist on the issue body. Then implement it one
+item at a time, checking each off as it lands. This is the one place questions
+belong — see §6.
 
 Keep the branch at **one commit**. When told to commit, amend the existing
 commit rather than stacking a new one — flatten with:
@@ -55,6 +66,11 @@ one that survives into main.
 - **No issue, no work.** The issue is what the commit closes and what the
   branch is named after — `feat/7-task-ordering`, `fix/23-overdue-cutoff`. If
   there is no issue, the task is not described well enough to start; write one.
+- **No agreed plan, no code.** Before implementing, read the issue and ask the
+  owner about anything the implementation leaves open. Only when it is all clear
+  do you write the plan into the issue as a task list — and only then do you
+  branch and start. Clarifying the plan and starting to code are one gate, not a
+  standing invitation to ask permission at every later step.
 - **One label per issue, and it is a Conventional Commit type.** The same word
   appears on the issue, in the branch prefix and in the merged subject. There
   are no other labels — a taxonomy that does not survive into the history is
@@ -115,13 +131,15 @@ Not in any README — these are mistakes that actually happened here.
   succeeded and none of the work reached main, because the PR was closed. Run
   `gh pr view <n> --json state` before amending, and
   `git fetch && git log --oneline origin/main` before assuming main has not
-  moved. Step 1 of §1 exists to catch exactly this.
+  moved. Step 2 of §1 exists to catch exactly this.
 - **Do not wait on CI after pushing.** Push and move on; run the e2e suite
   locally instead of watching the Action.
-- **Do not ask for approval before writing code — do wait before committing.**
-  Write the code without asking. But stop at the commit gate: the owner reviews
-  locally first and says when to commit, and again before you push or open a PR.
-  Describe what changed while they review.
+- **Agree the plan first, then write the code without asking again.** Questions
+  belong in the plan gate (§1, step 1): read the issue, clarify with the owner,
+  and write the task list into the issue. Once that plan is agreed, work through
+  it without pausing for approval to start each item — do not re-ask your way
+  down the checklist. The waiting gates come later, at commit, push and PR: the
+  owner reviews locally and says when. Describe what changed while they review.
 - **Assert before you patch.** When rewriting a README or an issue body with a
   script, assert the old string is present before replacing it. A silent
   no-match leaves the document claiming something the code no longer does, and

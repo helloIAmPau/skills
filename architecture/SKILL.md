@@ -16,8 +16,8 @@ about to speak before you open a file — and the name is only honest if the
 service really does speak it, which is the other half of the rule.
 
 So the two travel together: **if it is the data API it is GraphQL, and if it is
-GraphQL it is called `graphql`.** A REST service called `graphql` is worse than
-either, because the name is now actively lying.
+GraphQL it is called `graphql`.** A service called `graphql` that does not speak
+it is worse than either, because the name is now actively lying.
 
 It owns the `/graphql` prefix, and everything the product does with data goes
 through it: one endpoint, a schema, resolvers.
