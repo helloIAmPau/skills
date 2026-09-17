@@ -141,7 +141,10 @@ const publicKey = Buffer.from(process.env.TOKEN_PUBLIC_KEY, 'base64').toString()
 - `try`/`catch` appears **once**, around `jwt.verify`, because that library
   throws for something ordinary: a caller who is not signed in. A catch is for
   converting someone else's exception into your own normal case, not for
-  hiding failures — everywhere else, a rejected promise is left to reject.
+  hiding failures — everywhere else, a rejected promise is left to reject **into
+  the error handler**, which is what returning the chain is for. Left to reject
+  with nothing to receive it is not restraint, it is a dead process; see
+  Promises below.
 
 ## Promises
 
@@ -149,11 +152,11 @@ const publicKey = Buffer.from(process.env.TOKEN_PUBLIC_KEY, 'base64').toString()
 tests.
 
 ```js
-// a service
-consume(token).then(function(userId) {
-  ...
-}).catch(function(failed) {
-  console.error('callback failed', failed);
+// a service — returned, so a rejection reaches the error handler
+router.post('/callback', function(request, response) {
+  return consume(token).then(function(userId) {
+    response.data({ userId });
+  });
 });
 
 // a test
@@ -164,6 +167,34 @@ assert.equal(landed.status, 302);
 Different jobs. A service composes operations that mostly hand one value to the
 next; a test is a sequence of steps a person reads in order, and `await` is how
 that reads.
+
+### Return the chain
+
+**A handler returns its promise.** express 5 forwards a rejection from a
+returned promise to the service's error handler, which answers in the
+envelope.
+
+A chain that is **not** returned is not merely unhandled: it becomes an
+unhandled rejection and **node exits**. The process dies, not the request, and a
+runtime image carrying no watch and no restart policy does not come back — one
+rejected query takes the service down for everyone.
+
+Measured, not inferred. A forgotten chain answered `502`, because the service
+was gone:
+
+```
+Error: a promise rejected
+Node.js v24.13.1
+Failed running 'dist/index.js'. Waiting for file changes before restarting...
+```
+
+**This needs express 5.** express 4 does not forward a rejection at all, so
+returning the chain does not save it there.
+
+**A `.catch` that only logs is not an answer.** In a request handler it leaves
+the caller waiting for a timeout while the log quietly records why. Use one only
+where nothing is waiting — a background job, a fire-and-forget — and let
+everything else reject into the error handler.
 
 ## Declarations and spacing
 
