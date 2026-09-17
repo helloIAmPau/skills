@@ -1,13 +1,18 @@
 ---
 name: repo-workflow
-description: The contribution workflow for these repositories. An issue exists before work starts; the plan is agreed with the owner and broken into sub-issues (subtasks) under the issue before any code, then resolved one subtask at a time; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the README true when a decision contradicts it. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
+description: The contribution workflow for these repositories. An issue exists before work starts; the plan is agreed with the owner and broken into sub-issues (subtasks) under the issue before any code, then resolved one subtask at a time; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the AGENTS.md contract true when a decision contradicts it — the README is the user-facing description of the project, not the contract. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
 ---
 
 # Working in these repositories
 
-The path a change takes from issue to merge. The repository's own README is the
-contract and wins wherever the two differ — read it first, every session,
+The path a change takes from issue to merge. The repository's own AGENTS.md is
+the contract and wins wherever the two differ — read it first, every session,
 because nothing you learned last time survived.
+
+The README is a different document with a different job: the **user-facing
+description of the project** — its aim, what it is, how it is used — written to
+draw a reader in, not to settle how the thing is built. Do not read a decision
+out of the README, and do not put one there; decisions live in AGENTS.md.
 
 Working inside the agent container — the missing docker CLI, the host path the
 daemon resolves bind mounts against, which env file to source, file ownership,
@@ -116,19 +121,24 @@ These are the repository's labels, and there are no others.
 - A new dependency needs its reason in the commit body. These stacks are
   deliberately small.
 - The PR body says why the change exists and what a reviewer should look at
-  first. **If the README changed, say so** — that is the part worth reading
-  carefully.
+  first. **If AGENTS.md changed, say so** — a change to the contract is the part
+  worth reading carefully.
 
-## 5. Keeping the README true
+## 5. Keeping AGENTS.md true
 
-- A decision that contradicts the README changes the README **in the same
-  commit**. A README that has drifted is worse than none.
-- Something genuinely undecided goes in the README's Open questions — not in a
+- A decision that contradicts AGENTS.md changes AGENTS.md **in the same
+  commit**. A contract that has drifted is worse than none.
+- Something genuinely undecided goes in AGENTS.md's Open questions — not in a
   code comment, and not in someone's memory.
 - Prefer deleting code to guarding it with a flag.
-- When an issue's scope changes, edit the issue too. The README's build order
+- When an issue's scope changes, edit the issue too. AGENTS.md's build order
   links the issues; the two drifting apart is the same failure as a drifted
-  README.
+  contract.
+- **The README answers to the user, not the code.** Keep it true to what the
+  project *is and how it is used* — a change to the aim, the pitch or the usage
+  touches the README in the same commit. A purely internal decision touches
+  AGENTS.md and leaves the README alone; the two files drift for different
+  reasons and are kept true against different things.
 
 ---
 
@@ -152,7 +162,7 @@ Not in any README — these are mistakes that actually happened here.
   one — do not re-ask your way down the list. The remaining gates come later, at commit,
   push and PR: the owner reviews locally and says when. Describe what changed
   while they review.
-- **Assert before you patch.** When rewriting a README or an issue body with a
+- **Assert before you patch.** When rewriting AGENTS.md or an issue body with a
   script, assert the old string is present before replacing it. A silent
   no-match leaves the document claiming something the code no longer does, and
   that drift is the failure §5 is trying to prevent.

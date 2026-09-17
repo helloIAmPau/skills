@@ -96,9 +96,12 @@ Some things that keep these useful:
   look like a subset of it.
 - **Point at siblings** rather than repeating them. Each of the two skills here
   ends up in the other's territory occasionally; each says so and moves on.
-- **The repository's own README wins.** A skill describes how work is done; a
-  project's README is the contract for what is being built. Where they
-  disagree, the README is right and the skill needs a change.
+- **The repository's own AGENTS.md wins.** A skill describes how work is done; a
+  project's AGENTS.md is the contract for what is being built. Where they
+  disagree, AGENTS.md is right and the skill needs a change. A project's README
+  is its user-facing description — the aim, what it is, how to use it, written
+  to draw a reader in — not its contract; a disagreement is never settled
+  against it.
 
 Changes here follow the workflow the `repo-workflow` skill describes, which
 includes this repository.
