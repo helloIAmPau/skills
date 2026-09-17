@@ -1,6 +1,6 @@
 ---
 name: architecture
-description: How a project is shaped in these repositories — a workspace per package, a service per path prefix, an ingress that routes by prefix, and one image built for each service. Covers what a service is called, and in particular that the data API is GraphQL and is named for it. Load before adding a service or a workspace, naming either, deciding what belongs in a library, changing the ingress, or touching the Dockerfile.
+description: How a project is shaped in these repositories — a workspace per package, a service per path prefix, an ingress that routes by prefix, and one image built for each service. Covers what a service is called, and in particular that the data API is GraphQL and is named for it, and how the web app is built — a `web` workspace that renders a server shell and hydrates a client from one bundle each. Load before adding a service or a workspace, naming either, deciding what belongs in a library, changing the ingress, touching the Dockerfile, or building or scaffolding the web app.
 ---
 
 # Architecture
@@ -79,6 +79,64 @@ One Dockerfile, and which service it builds is a build argument.
 - A service that needs none of the above is not a service. The reverse is also
   true: a folder of files served by the ingress does not need a container, but
   a shell that has to be rendered does.
+
+## The web app is the client, and it renders a shell
+
+The path-less ingress rule sends everything left to the client, and the client
+is a `web` workspace. It is a service and not a folder of static files for one
+reason: it renders a shell per request rather than serving a fixed one, and
+that is what lets any client-side route survive a reload. A page that only ever
+shipped the same bytes would not need a container — this one runs `express`.
+
+Build it as **two entry points from one workspace**, because the server and the
+browser are two runtimes and each needs its own bundle:
+
+- `index.js` is the **server**. It is an `express` app that renders the React
+  shell with `renderToPipeableStream`, serves `/assets` statically, names
+  `/assets/client.js` as the bootstrap script, and listens on the fixed port
+  the ingress points at. `build:server` bundles it with esbuild for
+  `--platform=node`; the runtime stage copies only its `dist/`.
+- `client.js` is the **browser**. It does one thing — `createRoot` on `#root`
+  and render — because everything else is a component. `build:client` bundles
+  it with esbuild for the browser into `dist/assets`, so it lands where the
+  server serves it.
+- `build` runs both, minified. `develop` runs both under `concurrently` in
+  `--watch`, which is the `develop` the Dockerfile's development override runs
+  in place. Everything is a `devDependency` — the same rule as every service,
+  for the same reason: the runtime keeps only `dist/`.
+
+The shell and the app are **two different React trees**, and keeping them apart
+is the point:
+
+- `<Page/>` is server-only. It is the `<html>` document — meta, the critical
+  CSS inlined into a `<style>`, the `#root` div, the bootstrap script. It never
+  hydrates, so nothing in it may depend on browser state.
+- `<App/>` is what hydrates. It wraps the providers around the router
+  (`<AuthProvider><Router/>`), and the router is a table keyed on auth state —
+  a splash while it loads, sign-in when signed out, the protected routes once
+  in — so an unauthenticated reload of a deep link resolves without the server
+  knowing the route.
+
+The workspace is laid out so a file's directory says what kind of thing it is:
+
+```
+web/
+  index.js            server entry — renders <Page/>
+  client.js           browser entry — hydrates <App/>
+  components/         one directory per component, each a self-named index.js
+  contexts/           providers — auth, stream
+  hooks/              reusable browser hooks
+  package.json        every dependency a devDependency
+```
+
+- **One component per directory**, named for itself, holding an `index.js`. A
+  component is a directory and not a loose file for the same reason a skill is:
+  anything it needs — its styles, a child used nowhere else — sits beside it,
+  and a sibling at the root would be associated with nothing.
+- A **context** is the shared state a provider owns; a **hook** is browser
+  behaviour reused across components. Data still comes from `graphql` and
+  sign-in still goes through `auth` — the web app talks to both across the
+  ingress, it does not reach around them.
 
 ## Configuration
 
