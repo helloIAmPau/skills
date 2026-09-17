@@ -1,6 +1,6 @@
 ---
 name: repo-workflow
-description: The contribution workflow for these repositories. An issue exists before work starts; the plan is agreed with the owner and broken into sub-issues (subtasks) under the issue before any code, then resolved one subtask at a time; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the AGENTS.md contract true when a decision contradicts it — the README is the user-facing description of the project, not the contract. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
+description: The contribution workflow for these repositories. An issue exists before work starts; the plan is agreed with the owner and broken into sub-issues (subtasks) under the issue before any code, then resolved one subtask at a time; one branch per issue, named after it; one commit per branch. Implement then stop for local review — commit only on the owner's word, and push or open a pull request only on the owner's word too; the owner squash-merges. Issues and sub-issues are never closed by hand — only the merged PR closes them, via the `Closes #<n>` footers in the single commit, whose body names each implemented sub-issue and so doubles as the progress record across a stop-and-restart. Also covers the commit types that double as the only labels, what a commit body and a PR body are for, and keeping the AGENTS.md contract true when a decision contradicts it — the README is the user-facing description of the project, not the contract. Use before creating a branch, committing, pushing, force-pushing, or opening a pull request. What the container the work happens in is like is the agent-container skill.
 ---
 
 # Working in these repositories
@@ -31,10 +31,12 @@ and what `gh` cannot do there — is the `agent-container` skill.
                       approve it before any code
 2.  refresh main      git switch main && git pull --ff-only
 3.  branch per task   git switch -c <type>/<issue>-<short-slug>
-4.  implement         work the sub-issues in order, one at a time, closing each
-                      as it lands; then stop — the owner reviews locally
-5.  commit on command only when the owner asks; one commit per branch,
-                      carrying the Closes #<issue> footer
+4.  implement         work the sub-issues in order, one at a time; never close
+                      one by hand — record each in the commit instead; then
+                      stop — the owner reviews locally
+5.  commit on command only when the owner asks; one commit per branch, its body
+                      naming each implemented sub-issue and carrying a
+                      Closes #<n> footer for every sub-issue and the parent
 6.  push on command   git push -u origin <branch> — only when the owner asks
 7.  open a PR         only when the owner asks; title in conventional-commit
                       form, body says why
@@ -54,8 +56,9 @@ which files and functions, what the change is, how you will verify it — so the
 owner is reviewing the intended work, not a bare title, before any of it
 happens. Then wait for the owner's approval of that plan — a fourth explicit
 word, before the commit, push and PR ones. Only on it do you branch and start,
-working the sub-issues one at a time and closing each as it lands. This is the
-one place questions belong — see §6.
+working the sub-issues one at a time. You never close one by hand — each is
+recorded in the commit as it lands and the merged PR is what closes them all.
+This is the one place questions belong — see §6.
 
 Keep the branch at **one commit**. When told to commit, amend the existing
 commit rather than stacking a new one — flatten with:
@@ -66,7 +69,12 @@ git reset --soft main && git commit     # one commit, one message
 
 The branch reaches main as a single commit two ways at once: it already *is*
 one commit, and the owner **squash-merges** the PR. The branch's message is the
-one that survives into main.
+one that survives into main — and because that message carries a `Closes #<n>`
+footer for every sub-issue and the parent, the squash-merge is what closes them
+all. That is also why the message doubles as the progress record: the
+sub-issues stay open until the merge, so once the commit exists it names each
+one implemented so far, and a stop-and-restart reads it to see what is done and
+what remains (§4).
 
 ## 2. Rules that are not negotiable
 
@@ -98,9 +106,17 @@ one that survives into main.
 - **Push and open the PR only on the owner's word.** Even with the commit made,
   do not push or open a PR until the owner asks. Two separate gates — one before
   committing, one before pushing — and the owner reviews at each.
-- **`Closes #<issue>` goes in the commit**, not only the PR body. A squash-merge
-  carries the branch's commit message into main, so that footer is what closes
-  the issue. Repeating it in the PR body is harmless and useful during review.
+- **A `Closes #<n>` footer goes in the commit for every sub-issue and the
+  parent**, not only the PR body. A squash-merge carries the branch's commit
+  message into main, so those footers are the only thing that closes the
+  issues. Repeating them in the PR body is harmless and useful during review.
+- **Never close an issue or sub-issue by hand.** Not with `gh issue close`, not
+  through the API, not as a sub-issue lands. Every issue and sub-issue closes
+  exactly one way: the squash-merged PR carries the commit's `Closes #<n>`
+  footers into main and GitHub closes them together. `gh` authenticates as the
+  owner and would let you close them directly — that it can is not that you may.
+  Until the merge the sub-issues stay open, which is why the commit message is
+  where progress is recorded (§4).
 - **Rebase onto refreshed main, never merge main in.** History stays linear and
   the PR shows only its own work.
 - **Never merge, never approve.** Pull requests are approved and merged by the
@@ -118,6 +134,11 @@ These are the repository's labels, and there are no others.
 
 - Subject in conventional-commit form, matching the issue's label.
 - The body says **why**, not what — the diff already says what.
+- **The body names each implemented sub-issue and closes it.** One line per
+  sub-issue saying what it did, then a `Closes #<n>` footer for every sub-issue
+  and for the parent issue. Because nothing is closed by hand, this same list is
+  the progress record: keep it current as each sub-issue lands, and on a
+  stop-and-restart read it to see what is done and what is left.
 - A new dependency needs its reason in the commit body. These stacks are
   deliberately small.
 - The PR body says why the change exists and what a reviewer should look at
