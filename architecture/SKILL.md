@@ -81,12 +81,21 @@ everything   the client
 - A library exists when a second service needs the same thing, not in
   anticipation of one. An `index.js` arrives on the branch that first imports
   it — an empty package is a file nobody wrote.
-- **The health check is an express handler living in a service's workspace** —
-  the plain-HTTP service (`auth`), never the GraphQL one and never a shared
-  library. It is waited on before anything else is up and must answer without a
-  query document, so it stays plain HTTP; and it is that service's own route,
-  not something factored out, because there is only ever one of it and a
-  library exists only once a second service needs the same thing.
+- **A shared `service` library mounts the health check**, once, for every
+  service behind a prefix. No service writes its own.
+- **Health answers plain HTTP and never GraphQL.** It is waited on before
+  anything else is up, so it cannot require a query document to answer. That
+  constraint is on the *protocol*, not on which workspace the handler sits in —
+  a route the library mounts is plain HTTP wherever it lands.
+- **Health is liveness, not readiness, and does no I/O.** A handler that
+  queried the database could not answer during exactly the window it is being
+  asked, and a dependency being down is that dependency's health check to
+  report, not this one's.
+- Health is **not an exception** to the rule above about when a library exists.
+  It is the strongest case for it: every service needs a health check, which is
+  not one caller but all of them. An earlier version of this file argued the
+  opposite — that there is "only ever one of it", so it should not be factored
+  out — and had the count backwards.
 
 ## One image, many services
 
