@@ -24,7 +24,7 @@ what the machine underneath is like.
 `sleep` is blocked in the agent shell. Wait on the thing itself:
 
 ```sh
-curl --retry 60 --retry-delay 2 --retry-all-errors "$BASE_URL/api/health"
+curl --retry 60 --retry-delay 2 --retry-all-errors "$BASE_URL/auth/health"
 ```
 
 ## What is missing
