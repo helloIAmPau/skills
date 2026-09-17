@@ -1,12 +1,29 @@
 ---
 name: architecture
-description: How a project is shaped in these repositories — a workspace per package, a service per path prefix, an ingress that routes by prefix, and one image built for each service. Covers what a service is called, and in particular that the data API is GraphQL and is named for it, and how the web app is built — a `web` workspace that renders a server shell and hydrates a client from one bundle each. Load before adding a service or a workspace, naming either, deciding what belongs in a library, changing the ingress, touching the Dockerfile, or building or scaffolding the web app.
+description: How a project is shaped in these repositories — every workspace under `workspaces/@<project>/*`, a service per path prefix, an ingress that routes by prefix, and one image built for each service from a single root Dockerfile. Covers what a service is called, and in particular that the data API is GraphQL and is named for it, where the health check lives, why there is no `.dockerignore`, and how the web app is built — a `web` workspace that renders a server shell and hydrates a client from one bundle each. Load before adding a service or a workspace, naming either, deciding what belongs in a library, changing the ingress, touching the Dockerfile, or building or scaffolding the web app.
 ---
 
 # Architecture
 
 Read out of three repositories that share the shape. Where a repository and
 this file disagree, the repository wins and this file needs a change.
+
+## Every workspace lives under `workspaces/@<project>/`
+
+There is exactly one place a package can be:
+`workspaces/@<project>/<name>`. The npm scope is the project's own name —
+`@pul.se` in that repo, and the same shape in the other two — and every
+service and every library is a directory directly under it. The root
+`package.json` declares `"workspaces": ["workspaces/@<project>/*"]` and carries
+nothing else of its own; the lockfile beside it is the only one, because npm
+hoists a single `node_modules` to the root.
+
+- **A workspace's directory name is the service or library name**, and its
+  package name is `@<project>/<name>`. That one name is what the Dockerfile
+  builds (`--workspace=@<project>/${SERVICE}`), what the ingress routes to, and
+  what a cross-workspace dependency names (`"@<project>/postgres": "*"`).
+- **Nothing lives at the repository root but** the root manifest, the lockfile,
+  the compose file and the one Dockerfile. Sources are always a workspace down.
 
 ## The data API is GraphQL, and the service is called `graphql`
 
@@ -59,26 +76,76 @@ everything   the client
   file.
 - A **library** has a `main` and no build. It never ships on its own; it is
   bundled into whatever depends on it. Cross-workspace dependencies are
-  declared as `"@scope/postgres": "*"`.
+  declared as `"@<project>/postgres": "*"`.
 - A library exists when a second service needs the same thing, not in
   anticipation of one. An `index.js` arrives on the branch that first imports
   it — an empty package is a file nobody wrote.
-- **Health belongs on a plain HTTP service**, not the GraphQL one: it is waited
-  on before anything else is up, and it should not require a query document to
-  answer.
+- **The health check is an express handler living in a service's workspace** —
+  the plain-HTTP service (`auth`), never the GraphQL one and never a shared
+  library. It is waited on before anything else is up and must answer without a
+  query document, so it stays plain HTTP; and it is that service's own route,
+  not something factored out, because there is only ever one of it and a
+  library exists only once a second service needs the same thing.
 
 ## One image, many services
 
-One Dockerfile, and which service it builds is a build argument.
+One Dockerfile at the repository root, and which service it builds is the
+`SERVICE` build argument. It is the same file in every repo:
 
-- A `builder` stage installs once and builds the named workspace. The
-  development override stops there, bind-mounts the sources, and runs that
-  workspace's `develop`, so a saved file rebuilds and restarts in place.
-- A `runtime` stage copies **only** `dist/`. No `node_modules`, no sources, no
-  lockfile — which is why every dependency is a `devDependency`.
+```dockerfile
+from node:24.13-alpine as builder
+
+arg SERVICE
+env SERVICE=${SERVICE}
+
+copy package.json /source/package.json
+copy package-lock.json /source/package-lock.json
+
+copy --exclude=**/*.js --exclude=**/*.graphql workspaces /source/workspaces
+run cd /source && npm install
+
+copy workspaces /source/workspaces
+run cd /source && npm run build --workspace=@<project>/${SERVICE}
+
+expose 80
+cmd cd /source && npm run develop --workspace=@<project>/${SERVICE}
+
+from node:24.13-alpine
+
+arg SERVICE
+env SERVICE=${SERVICE}
+
+copy --from=builder /source/workspaces/@<project>/${SERVICE}/dist /app
+
+expose 80
+cmd cd /app && node index.js
+```
+
+- The **`builder` stage installs once and builds the named workspace.** The
+  first `copy` brings in only the manifests — `--exclude` drops every `.js` and
+  `.graphql` source — so the `npm install` layer is keyed on the `package.json`
+  files alone and a source edit does not reinstall. The full `copy workspaces`
+  then brings the sources in, and `npm run build` builds the one workspace.
+- The **development override stops at `builder`**, bind-mounts the sources, and
+  runs that workspace's `develop` — the stage's own `cmd` — so a saved file
+  rebuilds and restarts in place.
+- The **second stage copies only `dist/`** from the built workspace — no
+  `node_modules`, no sources, no lockfile — which is why every dependency is a
+  `devDependency`. It runs `node index.js`, so a service's built entry is
+  always `dist/index.js`.
 - A service that needs none of the above is not a service. The reverse is also
   true: a folder of files served by the ingress does not need a container, but
   a shell that has to be rendered does.
+
+### There is no `.dockerignore`, and that is on purpose
+
+`.dockerignore` does **not** read `.gitignore` — Docker has never honoured it,
+the two files are independent, and one has never covered for the other. So the
+reason these repos carry no `.dockerignore` is not that `.gitignore` stands in
+for it. It is that the Dockerfile never copies anything that should not ship: it
+names the manifests and the `workspaces` tree explicitly, `node_modules` is
+hoisted to the repository root and is never a `copy` target, and the second
+stage takes only `dist/`. Nothing to ignore means no file to keep in sync.
 
 ## The web app is the client, and it renders a shell
 
@@ -120,7 +187,7 @@ is the point:
 The workspace is laid out so a file's directory says what kind of thing it is:
 
 ```
-web/
+workspaces/@<project>/web/
   index.js            server entry — renders <Page/>
   client.js           browser entry — hydrates <App/>
   components/         one directory per component, each a self-named index.js
