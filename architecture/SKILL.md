@@ -23,7 +23,8 @@ hoists a single `node_modules` to the root.
   builds (`--workspace=@<project>/${SERVICE}`), what the ingress routes to, and
   what a cross-workspace dependency names (`"@<project>/postgres": "*"`).
 - **Nothing lives at the repository root but** the root manifest, the lockfile,
-  the compose file and the one Dockerfile. Sources are always a workspace down.
+  the compose files, the one Dockerfile and `migrations/`. Sources are always a
+  workspace down.
 
 ## The data API is GraphQL, and the service is called `graphql`
 
@@ -214,3 +215,37 @@ workspaces/@<project>/web/
   private key and nothing else does; whoever verifies holds the public one.
 - Services listen on a fixed port inside the network and are never published.
   Only the ingress is.
+
+## Database migrations are plain SQL, applied in order, each once
+
+Migrations live at the repository root in `migrations/` — plain `.sql` files
+and one `apply.sh` — never in a workspace. There is no migration framework and
+no dependency: the stack is deliberately small and `psql` already does the
+work.
+
+`npm run migrate` at the root runs `sh migrations/apply.sh`, which:
+
+- **requires `POSTGRES_USER` and `POSTGRES_DB` in the environment** — source the
+  env file first (`./.env.develop`, or `./.env.claude` in the agent container) —
+  and execs `psql` **inside the running `postgres` compose service**, so
+  migrations land in the same database the services use rather than over a
+  separate connection.
+- **ensures a ledger table once**, `migrations (name text primary key,
+  applied_at timestamptz not null default now())`.
+- **walks `migrations/*.sql` in filename order**, skips any `name` already in
+  the ledger, and for each new one pipes the file *and* its
+  `insert into migrations (name) values ('<name>');` through psql as a single
+  transaction (`--single-transaction`, `-v ON_ERROR_STOP=1`).
+
+That last step is the whole design: **a migration and the record that it ran
+commit together, so it is either applied and remembered or neither.** Identity
+is the filename and order is the filename, which fixes two rules:
+
+- **Name files so lexical order is apply order** — a zero-padded or timestamp
+  prefix (`0001-…`, `20260917-…`). Re-running `migrate` is safe because an
+  already-recorded file is skipped.
+- **An applied file is never renamed or edited.** The ledger keys on the name,
+  so a changed file that already ran will never run again and its change
+  silently never reaches the database. A change is a *new* file. There is no
+  down step — migrations are forward-only, and the ledger records what ran, not
+  how to undo it.
