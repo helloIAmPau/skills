@@ -13,7 +13,8 @@ what decides whether it is loaded at all.
 |---|---|
 | [`repo-workflow`](repo-workflow/SKILL.md) | Before creating a branch, committing, pushing, force-pushing, or opening a pull request. Issue first, one branch per issue, squash to one commit before pushing, open the PR and stop — review and merge belong to the repository owner. |
 | [`architecture`](architecture/SKILL.md) | Before adding a service or a workspace, naming either, deciding what belongs in a library, changing the ingress, touching the Dockerfile, or building the web app. A service per path prefix; the data API is GraphQL and is called `graphql`; `auth` is not GraphQL and the reason matters; the web app is the `web` client, a server shell and a hydrated client built from one bundle each. |
-| [`javascript`](javascript/SKILL.md) | Before writing or reviewing **JavaScript**, and before calling a diff's style wrong in review. No arrow functions, no space before a `function`'s parens, no `else`, no ternaries, no optional chaining and no `??`, at most two arguments, a single-use function written where it is used, template literals for anything spanning lines, promise chains in services and `async`/`await` only in tests. There is no linter; this is the whole of the enforcement. |
+| [`javascript`](javascript/SKILL.md) | Before writing or reviewing **JavaScript**, React included, and before calling a diff's style wrong in review. No arrow functions, no space before a `function`'s parens, no `else`, no ternaries, no optional chaining and no `??`, no `!`, no `for` and no `++`, at most two arguments, a single-use function written where it is used, template literals for anything spanning lines, promise chains in services and `async`/`await` only in tests, and comments at two lines in five. In React: one destructured object of props, `=== true` for a boolean prop, no `&&` or ternary inside JSX, every handler and held child memoised, a CSS module beside each component, glyphs as `.svg` files masked from the stylesheet, and fonts from fontsource. There is no linter; this is the whole of the enforcement. |
+| [`graphql`](graphql/SKILL.md) | Before scaffolding a data API, adding a field, a type, a scalar or a mutation, writing a resolver, or deciding whether a check belongs in the schema or in the code. A `.graphql` file loaded as text, a `schema.js` that finishes it by making every custom scalar a validator, an `index.js` that is only the HTTP surface, and `resolvers/` with one module per subject and a hand-written `root`. |
 | [`agent-container`](agent-container/SKILL.md) | At the start of any session that will run the stack, use docker or compose, touch an `.env` file, run migrations or the suite, or edit an issue body. The docker CLI is missing, `/workdir` is a different path to the daemon, and `sleep` is blocked. |
 
 ## How a repository gets them
@@ -50,6 +51,8 @@ skills/
   architecture/
     SKILL.md
   javascript/
+    SKILL.md
+  graphql/
     SKILL.md
 ```
 
