@@ -181,7 +181,9 @@ needs no device.
 - **A fresh Expo Go covers the app twice**: an introduction to its developer
   menu, whose Continue then opens the menu itself. Tap Continue, then send
   Back while the menu's own "Go home" is on screen — and only then, since Back
-  anywhere else leaves the app.
+  anywhere else leaves the app. **Back is not always enough**: on a runner the
+  menu stayed through five minutes of it, while a relaunch came up without
+  it. After a few polls in a row still showing the menu, relaunch the app.
 - On an emulator only, a failure names what was in front and the last text
   the app's screen showed; that is how the two covers above were found.
 - **Every check about the screen compares a boolean.** An assertion on the
