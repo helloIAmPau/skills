@@ -504,6 +504,10 @@ if (value === selected) {
 
 ### Styles are CSS modules, and esbuild is what scopes them
 
+This is the web's rule. A native app has no CSS: its styles are a
+`StyleSheet` in the component's own file, and the `react-native` skill says
+how.
+
 ```js
 import styles from './style.module.css';
 ```
