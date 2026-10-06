@@ -45,6 +45,8 @@ Use $react and $javascript to review this React component.
 
 Use $react-native-expo, $react and $javascript to update the mobile screen.
 
+Use $rust to implement or review Rust code in my pul.se and Olivia style.
+
 Use $github-feature-workflow to propose the next feature issue.
 ```
 
@@ -59,6 +61,7 @@ appear in Codex, restart the session.
 | Skill | Use it for |
 | --- | --- |
 | [javascript](skills/javascript/SKILL.md) | JavaScript functions, control flow, promises, formatting, comments, modules and tests. |
+| [rust](skills/rust/SKILL.md) | Rust source conventions derived from pul.se and Olivia: two-space layout, separate imports, explicit matches and returns, domain errors, typed data and async execution. |
 | [react](skills/react/SKILL.md) | React components, JSX, hooks, state, effects and contexts, including the mandatory single-responsibility and minimality rules. Web styling guidance applies only to web apps. Use alongside `javascript`. |
 | [react-native-expo](skills/react-native-expo/SKILL.md) | Hybrid's mobile workspace, native components and styling, Expo startup, development builds and device E2E tests. Use alongside `react` and `javascript`. |
 | [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Projects adopting npm workspaces, source-only libraries, bundled Express/GraphQL applications, Docker Compose and Caddy. |
