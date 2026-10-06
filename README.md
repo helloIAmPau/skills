@@ -41,9 +41,9 @@ its name with `$` in your prompt. See the [official skill documentation](https:/
 For example:
 
 ```text
-Use $javascript to review this React component.
+Use $react and $javascript to review this React component.
 
-Use $react-native-expo and $javascript to update the mobile screen.
+Use $react-native-expo, $react and $javascript to update the mobile screen.
 
 Use $github-feature-workflow to propose the next feature issue.
 ```
@@ -58,8 +58,9 @@ appear in Codex, restart the session.
 
 | Skill | Use it for |
 | --- | --- |
-| [javascript](skills/javascript/SKILL.md) | JavaScript and React functions, control flow, formatting, components and tests. React guidance is part of this skill. |
-| [react-native-expo](skills/react-native-expo/SKILL.md) | Hybrid's mobile workspace, native components and styling, Expo startup, development builds and device E2E tests. Use alongside `javascript`. |
+| [javascript](skills/javascript/SKILL.md) | JavaScript functions, control flow, promises, formatting, comments, modules and tests. |
+| [react](skills/react/SKILL.md) | React components, JSX, hooks, state, effects and contexts, including the mandatory single-responsibility and minimality rules. Web styling guidance applies only to web apps. Use alongside `javascript`. |
+| [react-native-expo](skills/react-native-expo/SKILL.md) | Hybrid's mobile workspace, native components and styling, Expo startup, development builds and device E2E tests. Use alongside `react` and `javascript`. |
 | [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Projects adopting npm workspaces, source-only libraries, bundled Express/GraphQL applications, Docker Compose and Caddy. |
 | [clickhouse](skills/clickhouse/SKILL.md) | Hybrid's ClickHouse access, entries schema, container configuration and numbered SQL migrations. |
 | [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | Projects adopting the issue-first agreement: approve the issue plan, implement, run E2E tests, then approve publication of one feature commit and a PR. |
@@ -68,7 +69,7 @@ appear in Codex, restart the session.
 Every React and React Native component must have exactly one responsibility and
 be as minimal as possible. Split independent concerns into focused components
 or hooks even when an extracted unit has only one caller. Enforce this during
-implementation and review; the details live in the JavaScript and native skills.
+implementation and review; the details live in the React and native skills.
 
 ## Update a project's pinned version
 
