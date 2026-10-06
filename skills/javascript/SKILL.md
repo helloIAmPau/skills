@@ -1,9 +1,15 @@
 ---
 name: javascript
-description: How **JavaScript** is written in these repositories, React included — the language rules only; other languages have their own skills. The style is specific and unenforced — no arrow functions, no else, no ternaries, no `!`, no `for`, promise chains in services and async/await only in tests, comments that say why at two lines in five — and in React a component is a function taking one destructured object, a boolean prop is compared with `=== true`, nothing is decided inside JSX, every handler and held child is memoised, styles are a CSS module beside the component, a glyph is an `.svg` file in that same directory used as a mask rather than a path inlined in JSX, and fonts are installed from fontsource rather than fetched from a CDN. There is no linter to catch a deviation. Load before writing or reviewing any code in these repositories, and before judging a diff's style in a pull request.
+description: Write and review JavaScript and React code using the project conventions for functions, control flow, promises, formatting, comments, components, and tests. Apply to JavaScript source and tests; React web styling rules do not define React Native conventions or project architecture.
 ---
 
 # JavaScript
+
+Adapted from [helloIAmPau/skills JavaScript skill](https://github.com/helloIAmPau/skills/blob/master/javascript/SKILL.md), with local architecture notes for Hybrid. Counts and application-specific examples describe the upstream repositories, not this project. Follow this project's `AGENTS.md` when instructions conflict; examples do not select databases, authentication, API contracts, or service boundaries. Follow [react-native-expo](../react-native-expo/SKILL.md) for native application structure, styling, and device E2E tests.
+
+For package layout, dependency placement, application builds, containers, and the shared HTTP contract, use [npm-workspace-services](../npm-workspace-services/SKILL.md). In that architecture, libraries export their root `index.js` source directly and only exposed application service workspaces compile. The JavaScript rules below apply to both kinds of source.
+
+For Hybrid database code, follow [clickhouse](../clickhouse/SKILL.md), including typed named parameters and ClickHouse SQL semantics. Upstream SQL examples below illustrate JavaScript structure, not a choice of database or parameter syntax for Hybrid.
 
 **This file is about JavaScript and nothing else.** SQL appears in it only as
 SQL written *from* JavaScript — how a query string is built and how values
@@ -13,9 +19,10 @@ language gets a second skill rather than a section in this one. **React is not
 a second language** — JSX is an expression and a component is a function — so it
 is a section, at the bottom, and everything above it applies inside it.
 
-**Read out of the code, not decided.** Every rule below was counted before it
-was written, and the counts are given so a reader can check. The code is the
-authority: where it and this file disagree, this file is what is wrong.
+**Existing conventions were read out of the code.** The counts are given so a
+reader can check. Explicit owner requirements, including the mandatory component
+scope rule below, take precedence over existing code; update code that violates
+them.
 
 There is no linter and no formatter. The style holds because people match what
 is already there, which is exactly the knowledge a fresh container lacks.
@@ -74,6 +81,11 @@ export function attach({ response, token, days }) { ... }
   `function(request, response, next)` and stays that way, and a React component
   takes one object because React hands it one — many fields in that object is
   not many arguments.
+- Express error middleware keeps all four arguments:
+  `function(error, request, response, next)`, even when its body only returns
+  `response.error(error)`. The shared factory keeps the approved export form
+  `export const service = function(name, handler)`; callers configure it with
+  `function({ router })`.
 
 ## No operator stands in for a check
 
@@ -180,7 +192,7 @@ that is a summary of the body does not, which is every other case.
 
 ## Control flow
 
-**Guard, then return.** There is no `else` in the codebase, and no ternary.
+**Guard, then return.** Check exit or no-op conditions first and return immediately; keep the main path outside conditional blocks. There is no `else` in the codebase, and no ternary.
 
 ```js
 if (typeof token !== 'string') {
@@ -221,8 +233,16 @@ depending on which side of the variable it lands.
 
 ## Errors
 
+**Hybrid's shared HTTP contract uses the name `error`.** This is the owner's
+explicit exception to the upstream `failed` naming below. Use
+`response.error(error)` for an explicit error response and `response.data(data)`
+for success; both helpers belong exclusively to `response`. The generic error
+middleware delegates to `response.error(error)` without a `headersSent` check.
+Status selection and payload formatting belong to that helper, as defined in
+[npm-workspace-services](../npm-workspace-services/SKILL.md#shared-express-server-contract).
+
 **An error is an `Error` with a `status` on it, built in three lines and called
-`failed`.** Twenty of them, spelled the same way every time:
+`failed` in the upstream examples.** Twenty of them, spelled the same way every time:
 
 ```js
 const failed = new Error(`Invalid email address ${ parsed }`);
@@ -243,9 +263,9 @@ throw failed;
   credential-shaped string in every log on the way out; a title is not, because
   it is still sitting in the field that refused it and it can be two hundred
   characters long.
-- **`failed` is also the name of a caught rejection**: `.catch(function(failed) { ... })`.
-  Not `error`, not `e` — the variable says what happened rather than what type
-  it is.
+- **`failed` is also the name of a caught rejection in the upstream style**:
+  `.catch(function(failed) { ... })`. Hybrid's shared HTTP handlers use the
+  explicit `error` exception above.
 
 ## Promises
 
@@ -319,13 +339,15 @@ everything else reject into the error handler.
 
 ## Imports
 
-ESM only; the bundler decides what it becomes. Groups separated by a blank
-line, in this order:
+Write ESM source. Shared libraries remain uncompiled ES modules and expose their
+root `index.js`; exposed application services bundle their own entry and imported
+library source. Do not convert library source to CommonJS to match an application's
+CommonJS output. Groups are separated by a blank line, in this order:
 
 ```js
 import { randomBytes, createHash } from 'node:crypto';
 
-import { serve } from '@scope/service';
+import { service } from '@scope/service';
 import { query } from '@scope/postgres';
 
 import { mint, consume } from './tokens';
@@ -337,6 +359,9 @@ Node builtins carry the `node:` prefix — `node:crypto`, `node:test`,
 ## Naming and files
 
 - A directory that holds code holds an `index.js`, and that is its entry.
+- Workspace entry points are root `index.js` files, without a `src` subfolder.
+  Import shared workspace libraries by package name, such as `@hybrid/service`,
+  rather than importing another workspace's internal file path or generated output.
 - Directories are kebab-case, including component directories. The React
   component inside is PascalCase.
 - camelCase for values and functions. SCREAMING_SNAKE appears only in tests.
@@ -381,6 +406,26 @@ there is no other.
 above holds here unchanged** — no arrows, no `else`, no ternary, no `!`, no
 loop, promise chains rather than `await`, and the same comment density. What
 follows is only what React adds.
+
+### One scope per component, always
+
+**Every React and React Native component must perform exactly one scope of
+responsibility and be as minimal as possible.** This is a mandatory owner
+requirement, including when existing code combines responsibilities.
+
+- Keep only the props, state, handlers, effects, markup and styles needed for
+  that responsibility. Remove unused code, speculative variants and unnecessary
+  wrappers; preserve required behavior and accessibility.
+- Split independently meaningful UI concerns into focused child components.
+  Screens compose those components; move separate data/lifecycle orchestration
+  into focused hooks rather than accumulating it in a screen component.
+- Extract a component or hook when it separates responsibilities, even with
+  only one caller. This takes precedence over the single-caller helper rule
+  above. Create only units that are actually used.
+- During implementation and review, identify each component's one responsibility.
+  A component that mixes independent concerns must be split before the work is
+  considered complete. Judge minimality by responsibility and necessary code,
+  rather than an arbitrary line count or compressed formatting.
 
 ### A component is a function that takes one object
 
@@ -505,8 +550,8 @@ if (value === selected) {
 ### Styles are CSS modules, and esbuild is what scopes them
 
 This is the web's rule. A native app has no CSS: its styles are a
-`StyleSheet` in the component's own file, and the `react-native` skill says
-how.
+`StyleSheet` above the component in its own file, as defined in
+[react-native-expo](../react-native-expo/SKILL.md).
 
 ```js
 import styles from './style.module.css';
@@ -732,14 +777,18 @@ one.** The dependency array is exhaustive and lists what the body reads.
 
 ## Tests
 
+Hybrid uses E2E tests only, as requested by the owner in issue #3. Tests exercise
+the running stack through its public HTTP gateway and native application UI
+without mocking transport or importing application internals. Do not add unit or in-process integration tests.
+
 - `node:test` and `node:assert/strict`.
 - **A test name is a sentence about behaviour**, not a method name:
   `'a link works once'`, `'the sixth request for one address in an hour is
   accepted and not sent'`.
 - The last argument to an assertion is a message saying what broke:
   `assert.equal(found.messages.length, 5, 'the rate limit did not hold at five')`.
-- The suite talks to the running stack over HTTP and reads mail out of Mailpit.
-  Nothing about the transport is mocked.
+- The suite talks to the running stack over HTTP. Nothing about the transport
+  is mocked; infrastructure such as mail remains undecided for Hybrid.
 - **A test takes an `async function`**, and `await` is the whole point of a test
   file: 372 of them against zero in the source. A test is a sequence of steps a
   person reads in order.
@@ -787,9 +836,9 @@ one.** The dependency array is exhaustive and lists what the body reads.
   stop fitting, and where that is has never been agreed: `Button` renders its
   own seven attributes on one 154-column line, and a calendar cell renders
   seven on seven lines.
-- **Whether any of this should be enforced.** There is no linter. Adding one
-  would catch the arrow function nobody meant to write, and would also have
-  opinions of its own about every rule above.
+- **Automated enforcement.** There is no linter. Component scope and minimality
+  are mandatory implementation and review checks regardless of lint tooling.
+  Adding a linter would also give it opinions about the other rules above.
 - **Every other language.** The `.sql` files, the CSS, the shell scripts and
   the Dockerfiles are written to conventions nobody has written down. This file
   deliberately does not reach for them. CSS modules are named here only where

@@ -1,113 +1,116 @@
-# skills
+# Shared coding skills
 
-Skills for working on helloIAmPau's repositories, kept in one place so a change
-to how the work is done arrives as a diff rather than as folklore.
+Reusable instructions for coding agents working on helloIAmPau's projects.
+Each skill describes when it applies and the conventions to follow. Several
+skills contain Hybrid-specific architecture and tooling decisions; read their
+scope before applying them to another project.
 
-A skill is a set of instructions that loads only when it is relevant. Nothing
-here is read on every session; each file states when it applies, and that is
-what decides whether it is loaded at all.
+This repository is installed as the consuming project's `.agents` directory.
+Its skills live under `.agents/skills/<skill-name>/SKILL.md`.
 
-## What is here
+## Install in a project
 
-| Skill | Load it when |
-|---|---|
-| [`repo-workflow`](repo-workflow/SKILL.md) | Before creating a branch, committing, pushing, force-pushing, or opening a pull request. Issue first, one branch per issue, squash to one commit before pushing, open the PR and stop — review and merge belong to the repository owner. |
-| [`architecture`](architecture/SKILL.md) | Before adding a service or a workspace, naming either, deciding what belongs in a library, changing the ingress, touching the Dockerfile, or building the web app. A service per path prefix; the data API is GraphQL and is called `graphql`; `auth` is not GraphQL and the reason matters; the web app is the `web` client, a server shell and a hydrated client built from one bundle each. |
-| [`javascript`](javascript/SKILL.md) | Before writing or reviewing **JavaScript**, React included, and before calling a diff's style wrong in review. No arrow functions, no space before a `function`'s parens, no `else`, no ternaries, no optional chaining and no `??`, no `!`, no `for` and no `++`, at most two arguments, a single-use function written where it is used, template literals for anything spanning lines, promise chains in services and `async`/`await` only in tests, and comments at two lines in five. In React: one destructured object of props, `=== true` for a boolean prop, no `&&` or ternary inside JSX, every handler and held child memoised, a CSS module beside each component, glyphs as `.svg` files masked from the stylesheet, and fonts from fontsource. There is no linter; this is the whole of the enforcement. |
-| [`graphql`](graphql/SKILL.md) | Before scaffolding a data API, adding a field, a type, a scalar or a mutation, writing a resolver, or deciding whether a check belongs in the schema or in the code. A `.graphql` file loaded as text, a `schema.js` that finishes it by making every custom scalar a validator, an `index.js` that is only the HTTP surface, and `resolvers/` with one module per subject and a hand-written `root`. |
-| [`react-native`](react-native/SKILL.md) | Before scaffolding or changing the phone app, adding a screen, styling a native component, running the app on a device, or writing a test of it. Expo with Expo Router in Expo Go; a route is a default export; a `StyleSheet` sits in the component's own file; the device reaches Metro and the API over `adb reverse`; one `android` service owns adb, Metro and the emulator; the phone is a person's own; the app is tested on the device through uiautomator. |
-| [`agent-container`](agent-container/SKILL.md) | At the start of any session that will run the stack, use docker or compose, touch an `.env` file, run migrations or the suite, or edit an issue body. The docker CLI is missing, `/workdir` is a different path to the daemon, and `sleep` is blocked. |
-
-## How a repository gets them
-
-As a submodule, at the path the tooling already looks in:
+From the root of a Git repository that does not already have a `.agents`
+directory:
 
 ```sh
-git submodule add https://github.com/helloIAmPau/skills.git .claude/skills
+git submodule add -b master https://github.com/helloIAmPau/skills.git .agents
+git add .gitmodules .agents
 ```
 
-A fresh checkout has to initialise it, and a checkout that skips this gets an
-empty directory and no error — the worst way to be missing something:
+Commit `.gitmodules` and the `.agents` submodule reference using the project's
+publication workflow. The project pins a specific skills commit; subsequent
+changes in this repository do not automatically change that pin.
+
+After checking out a project that already references the submodule, run:
 
 ```sh
-git submodule update --init .claude/skills
+git submodule update --init --recursive .agents
 ```
 
-The repository is private, so cloning it needs credentials. `gh` supplies them
-through git's credential helper; CI needs its own answer.
+Alternatively, clone the consuming project with `git clone --recurse-submodules`.
+GitHub credentials with repository access are required if access is restricted.
 
-Each consuming repository pins a commit. That is the point: a repository says
-which version of the working agreement it is on, and moving to a newer one is a
-deliberate act with a diff attached.
+## Use the skills
 
-## The layout
+Open Codex in the consuming project. Codex discovers repository skills under
+`.agents/skills` and can select one when your task matches its description.
+In Codex CLI or the IDE extension, use `/skills` to select a skill or mention
+its name with `$` in your prompt. See the [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
 
-```
-skills/
-  README.md
-  repo-workflow/
-    SKILL.md
-  agent-container/
-    SKILL.md
-  architecture/
-    SKILL.md
-  javascript/
-    SKILL.md
-  react-native/
-    SKILL.md
-  graphql/
-    SKILL.md
+For example:
+
+```text
+Use $javascript to review this React component.
+
+Use $react-native-expo and $javascript to update the mobile screen.
+
+Use $github-feature-workflow to propose the next feature issue.
 ```
 
-**One directory per skill, holding a `SKILL.md`.** The directory name is the
-skill's name and matches the `name:` in the frontmatter. A flat `.md` at the
-root is not a skill — it is tracked and never loaded, which fails by looking
-like nothing happened.
+Read the applicable `SKILL.md` before implementing or reviewing its subject.
+Follow its linked skills where the task crosses their boundaries. Project
+instructions belong in the consuming project's `AGENTS.md`; explicit owner
+instructions take precedence over skill guidance. If a changed skill does not
+appear in Codex, restart the session.
 
-Anything a skill needs beyond its own text — a reference, a script, a template
-— sits in that directory beside it. That is the reason for the directory: a
-sibling file at the root is associated with nothing.
+## Available skills
 
-## Adding one
+| Skill | Use it for |
+| --- | --- |
+| [javascript](skills/javascript/SKILL.md) | JavaScript and React functions, control flow, formatting, components and tests. React guidance is part of this skill. |
+| [react-native-expo](skills/react-native-expo/SKILL.md) | Hybrid's mobile workspace, native components and styling, Expo startup, development builds and device E2E tests. Use alongside `javascript`. |
+| [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Projects adopting npm workspaces, source-only libraries, bundled Express/GraphQL applications, Docker Compose and Caddy. |
+| [clickhouse](skills/clickhouse/SKILL.md) | Hybrid's ClickHouse access, entries schema, container configuration and numbered SQL migrations. |
+| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | Projects adopting the issue-first agreement: approve the issue plan, implement, run E2E tests, then approve publication of one feature commit and a PR. |
+| [workspace-ownership](skills/workspace-ownership/SKILL.md) | Preserving the standard development user's ownership of authored files and Git metadata when working from a root container. |
+
+Every React and React Native component must have exactly one responsibility and
+be as minimal as possible. Split independent concerns into focused components
+or hooks even when an extracted unit has only one caller. Enforce this during
+implementation and review; the details live in the JavaScript and native skills.
+
+## Update a project's pinned version
+
+With a clean submodule working tree, fetch the configured `master` branch and
+review the resulting change from the consuming project's root:
+
+```sh
+git submodule update --remote .agents
+git diff --submodule=log -- .agents
+git add .agents
+```
+
+Commit the updated reference through the project's publication workflow.
+Use `git submodule update --init --recursive .agents` to restore the version
+pinned by the consuming project instead of selecting the latest remote version.
+
+## Edit or add skills
+
+Work in this repository directly, or create a branch inside the `.agents`
+submodule before editing. Submodule checkouts may otherwise have a detached
+HEAD. Publish the skills commit first, then update and commit the consuming
+project's `.agents` reference so other developers can fetch that commit.
+
+Keep one directory per skill under `skills/`, with a `SKILL.md` containing YAML
+frontmatter:
 
 ```markdown
 ---
-name: <directory-name>
-description: <what it covers, and when to load it>
+name: example-skill
+description: Describe what the skill does and when it applies.
 ---
 
-# Title
+# Example skill
 
-...
+Instructions for the task.
 ```
 
-**The `description` is the most important line in the file**, and the one most
-often written as an afterthought. It is all that is read when deciding whether
-to load the skill, so it has to say both *what the skill covers* and *the
-moments it applies to* — "before opening a pull request", "at the start of a
-session that will run the stack". A description that only names a topic is a
-skill that loads too late to help.
+Use clear descriptions, preserve the intended scope and explain non-obvious
+constraints. Keep supporting scripts, references or assets inside the relevant
+skill directory, and link shared guidance rather than copying it. Optional
+`agents/openai.yaml` files provide skill display and invocation metadata.
 
-Some things that keep these useful:
-
-- **Say why, not only what.** A rule with its reason attached survives contact
-  with a case it did not anticipate; a bare instruction does not.
-- **Write what is true here**, not what is true in general. The value is in the
-  specifics — this container, these repositories, this failure that actually
-  happened.
-- **One subject per skill.** Two subjects in one file means loading both to get
-  either, and the wrong one is noise at the moment it is least wanted. A
-  language counts as a subject, and the name should say which — `javascript`,
-  not `code-style`, so that a second language can sit beside it rather than
-  look like a subset of it.
-- **Point at siblings** rather than repeating them. Each of the two skills here
-  ends up in the other's territory occasionally; each says so and moves on.
-- **The repository's own AGENTS.md wins.** A skill describes how work is done; a
-  project's AGENTS.md is the contract for what is being built. Where they
-  disagree, AGENTS.md is right and the skill needs a change. A project's README
-  is its user-facing description — the aim, what it is, how to use it, written
-  to draw a reader in — not its contract; a disagreement is never settled
-  against it.
-
-Changes here follow the workflow the `repo-workflow` skill describes, which
-includes this repository.
+Review changed instructions for conflicts and broken relative links before
+publishing. Skill files guide agents; they do not install a linter or replace
+the consuming project's required verification.

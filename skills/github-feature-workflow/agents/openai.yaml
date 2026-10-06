@@ -1,0 +1,4 @@
+interface:
+  display_name: "GitHub Feature Workflow"
+  short_description: "Approved issue plans and one commit per feature"
+  default_prompt: "Use $github-feature-workflow to coordinate this repository through approved GitHub issue plans and one authorized commit per feature."
