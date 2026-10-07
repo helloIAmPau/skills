@@ -106,9 +106,16 @@ Every feature requires an E2E suite that checks the feature's validity through o
 
 Keep the E2E test layout flat: all test files live directly in `tests/e2e/`, without nested feature or platform directories. Distinguish features through filenames.
 
-This project uses E2E tests only. Exercise the real stack through its public interfaces without mocked transports or in-process application tests. Before every test run, start the entire development stack with `npm run develop` and confirm it is ready. Use all services from the base Compose file and development override, including application rebuild/restart watchers. If that full stack is already running, confirm its services are ready and the latest changes have rebuilt before testing. Do not substitute a partial stack, a directly launched application, or the production runtime stack for this required development verification. Keep the test command separate from stack startup.
+This project uses E2E tests only. Exercise the real stack through its public interfaces without mocked transports or in-process application tests. The developer or coding agent manages each test run through separate commands, in this order:
 
-Always run the complete E2E suite with `npm test`, including every feature and existing regression coverage. Do not add or use feature-specific test scripts such as `test:mobile`. If tests fail, return to implementation, correct the cause, rebuild or restart affected services as needed, and rerun the tests. Continue within the approved scope without requesting renewed permission for routine fixes. Do not skip, remove, or weaken valid assertions merely to obtain a passing result.
+1. Start the entire development stack with `npm run develop` and confirm every service is ready, including application rebuild/restart watchers. Use the base Compose file and development override. If a previous test stack is still running, tear it down before starting this run.
+2. Run the project's migrations against that running database and wait for success before testing. If migrations have not been implemented, verify and report that fact; do not invent a migration command.
+3. Run the complete E2E suite with `npm test` as a separate command.
+4. Tear down the entire development stack after the suite finishes, whether it passes or fails. Preserve persisted data unless its removal was explicitly authorized. If setup or migrations fail, tear down the partially started stack as well.
+
+Keep this lifecycle in the skill instructions, not in test scripts. `npm test`, test hooks and test helpers must not start or stop the stack, run migrations, or wrap this sequence in an orchestration script. Tests may inspect running containers or temporarily inject and restore a failure to validate an acceptance criterion. Do not substitute a partial stack, a directly launched application, or the production runtime stack for the required development verification.
+
+Always run the complete E2E suite with `npm test`, including every feature and existing regression coverage. Do not add or use feature-specific test scripts such as `test:mobile`. If tests fail, return to implementation, correct the cause, and repeat the complete startup, migration, test and teardown sequence. Continue within the approved scope without requesting renewed permission for routine fixes. Do not skip, remove, or weaken valid assertions merely to obtain a passing result.
 
 Tests that could not run are not passing tests. Report any environment or access blocker and resolve it within the available authorization; do not advance to publication while required E2E verification remains incomplete.
 

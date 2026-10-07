@@ -1,6 +1,6 @@
 ---
 name: react
-description: Write and review React components, JSX, hooks, state, effects and contexts with mandatory single-responsibility and minimality rules. Apply shared component conventions to React Native; web styling, DOM events, SVG masks and fontsource guidance apply only to React web apps.
+description: Write and review React web services with server-rendered documents, separate browser entries and minimal components with one responsibility. Apply component, JSX and hook conventions to React Native; document rendering, CSS, DOM and fontsource rules apply to web apps.
 ---
 
 # React
@@ -37,6 +37,62 @@ requirement, including when existing code combines responsibilities.
   A component that mixes independent concerns must be split before the work is
   considered complete. Judge minimality by responsibility and necessary code,
   rather than an arbitrary line count or compressed formatting.
+
+## The web service renders the document on the server
+
+**React web services must follow the owner's server-rendered document and
+separate browser-entry structure**, as in
+[dodo's web service](https://github.com/helloIAmPau/dodo/blob/e5ec41e5d03fd7faefc0b1dbf6e7310e28b8c3d0/workspaces/%40dodo/web/index.js).
+This is an explicit owner directive. It applies to web services; React Native
+keeps its native entry and rendering model.
+
+- Workspace-root `index.js` is the server entry. Render `<Page/>` per document
+  request with `renderToPipeableStream` from `react-dom/server`. Follow the
+  consuming project's shared HTTP service contract and route definitions.
+- `components/page/index.js` is server-only and owns the `<html>` document:
+  metadata, document-wide styles, the browser mount root and noscript guidance.
+  Render an empty `<div id='root'></div>`; keep browser state and effects in the
+  interactive application. Do not serve a copied static HTML template.
+- Workspace-root `client.js` is the separate browser entry. Import self-hosted
+  fonts there and use `createRoot` to mount the interactive application into
+  `#root`. This mounts into an empty root; do not describe it as hydration of
+  server-rendered application content.
+- Keep every web UI component under the workspace's `components` folder,
+  including page-level composition such as `components/workspace`. Do not create
+  a separate `screens` folder. Hooks and contexts remain separate non-component
+  modules. The Page owns only the document; page-level components compose focused
+  browser components.
+- Supply `/assets/client.js` through `bootstrapScripts`; React injects the
+  bootstrap tag. Set the HTML response type and pipe the stream in
+  `onShellReady`. Forward failures before the shell is ready through the
+  project's HTTP error handler using `onShellError`.
+- The Page imports its global `style.css` as `style` and inlines that static
+  text in `<head>`. The server build uses JSX and `.css=text`; the browser build
+  uses JSX, CSS modules and IIFE output for the classic bootstrap script.
+  Link `/assets/client.css` from the document. Emit browser assets under
+  `dist/assets`, resolve them beside the compiled server entry and keep the
+  production artifact independent of checkout source.
+- Configure esbuild through CLI arguments in npm scripts. Use separate server
+  and browser build commands; reuse them with `--watch=forever` for development.
+  Do not introduce `build.js`, `build/index.js` or other JavaScript build helpers.
+- Watch server document/style imports and browser component/style imports with
+  their respective builds. Verify the actual document, browser startup, assets,
+  error handling and source rebuilds through the project's required tests.
+
+The server handler's rendering boundary is:
+
+```js
+const stream = renderToPipeableStream(<Page/>, {
+  bootstrapScripts: [ '/assets/client.js' ],
+  onShellReady: function() {
+    response.type('html');
+    stream.pipe(response);
+  },
+  onShellError: function(error) {
+    next(error);
+  }
+});
+```
 
 ## A component is a function that takes one object
 
@@ -320,9 +376,9 @@ one.** The dependency array is exhaustive and lists what the body reads.
 - **A component that draws a thing asks for it.** `NavUser` fetches the address
   it shows rather than being handed one; every column on the board sends its own
   query. A component that fetches what it draws can be re-read on its own.
-- The document is a template literal written in the component, beside the thing
-  it fills. There is no queries module: a client that knew the queries would be
-  a second place every new field has to be added.
+- When GraphQL is used, the query document is a template literal written in the
+  component, beside the thing it fills. There is no queries module: a client that
+  knew the queries would be a second place every new field has to be added.
 - **The handler is named for the operation, suffixed with what it does** —
   `query Plan` becomes `planQuery`, `mutation CreateTask` becomes
   `createTaskMutation` — so a screen sending two reads as two named calls rather
