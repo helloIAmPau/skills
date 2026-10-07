@@ -69,7 +69,7 @@ service('service_name', function({ router }) {
 
 ## GraphQL schema and resolvers
 
-Application data services use GraphQL under the owner's explicit directive. Follow the consuming project's service boundary and route names in `AGENTS.md`; Hybrid exposes GraphQL through `@hybrid/control` at `/control`. HTTP health remains a separate route. Use these schema and resolver conventions:
+Application data services use GraphQL under the owner's explicit directive. Follow the consuming project's service boundary and route names in `AGENTS.md`; Hybrid exposes GraphQL through `@hybrid/graphql` at `/graphql`. HTTP health remains a separate route. Use these schema and resolver conventions:
 
 - Create the GraphQL application with `@scope/service` and the project's selected service name. Register `createHandler({ schema, rootValue })` with `router.all('/')`; the shared library supplies the service's `/health` and listener.
 - Load SDL from `schema.graphql`, beside the application's `index.js`. Keep schema definitions out of JavaScript. Use GraphQL Tools' `makeExecutableSchema` from `@graphql-tools/schema` to construct the executable schema and `createHandler` from `graphql-http/lib/use/express` to expose it.
@@ -132,6 +132,10 @@ services:
 
 - Always name the root Compose file `docker-compose.yml`. Use that filename in scripts, documentation, and validation commands.
 - Run each backend application service as a separate Express server and Compose service. Infrastructure containers such as Caddy and databases use their own suitable images.
+- When a dependency is hosted externally in production, put its local development
+  container and local startup dependencies only in `docker-compose.develop.yml`.
+  Keep production connection settings and server-side credentials explicit;
+  do not require a development-only container in the base Compose file.
 - Shared libraries have no Compose entries, `depends_on` entries, or proxy targets. When removing an application, also remove its workspace dependency, lockfile entries, Compose service, development override, and Caddy routes; remove now-unused build tools with that workspace.
 - Hardcode Caddy's image with an exact release version in `docker-compose.yml`. Caddy does not maintain a separate LTS line; verify and pin the latest supported stable release. Do not use floating tags or an image environment variable.
 - Caddy is the only service allowed to publish ports. Publish only TCP ports `80:80` and `443:443`. Do not add a UDP port mapping. Store the full Caddy site address, including `http://` or `https://`, in `.env` as `<PROJECT>_HOST`, replacing `<PROJECT>` with the actual project name in uppercase (for example, `HYBRID_HOST` for Hybrid). Use that concrete variable name consistently in environment files, Compose, and documentation, and interpolate it directly into the Caddyfile. Never prepend a scheme or append a port in Compose. Keep the published ports fixed at 80 and 443; the address scheme controls which protocol is served. An explicit `http://` address serves HTTP without automatic HTTPS; `https://` enables HTTPS with HTTP redirects. For local development use `http://localhost`, or `https://localhost` with Caddy's local CA.
