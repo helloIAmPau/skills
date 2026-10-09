@@ -12,16 +12,15 @@ for native application structure, styling and device E2E tests; CSS modules,
 DOM event examples, SVG masks and fontsource instructions below apply to web
 applications only.
 
-The counts and examples come from the upstream React web workspace: 2,492 lines,
-37 component directories, two contexts and one hook. They describe that source,
-not this project's architecture. Follow the project's `AGENTS.md`; explicit
-owner requirements take precedence over existing code.
+Follow the consuming project's applicable instructions and explicit user decisions.
+The web service structure applies when that architecture is selected; React
+component conventions alone must not migrate an existing application's architecture.
 
 ## One scope per component, always
 
 **Every React and React Native component must perform exactly one scope of
-responsibility and be as minimal as possible.** This is a mandatory owner
-requirement, including when existing code combines responsibilities.
+responsibility and be as minimal as possible.** Enforce this even when existing
+code combines responsibilities.
 
 - Keep only the props, state, handlers, effects, markup and styles needed for
   that responsibility. Remove unused code, speculative variants and unnecessary
@@ -40,11 +39,8 @@ requirement, including when existing code combines responsibilities.
 
 ## The web service renders the document on the server
 
-**React web services must follow the owner's server-rendered document and
-separate browser-entry structure**, as in
-[dodo's web service](https://github.com/helloIAmPau/dodo/blob/e5ec41e5d03fd7faefc0b1dbf6e7310e28b8c3d0/workspaces/%40dodo/web/index.js).
-This is an explicit owner directive. It applies to web services; React Native
-keeps its native entry and rendering model.
+**For the selected web service architecture, render the document on the server
+with a separate browser entry.** React Native keeps its native entry and rendering model.
 
 - Workspace-root `index.js` is the server entry. Render `<Page/>` per document
   request with `renderToPipeableStream` from `react-dom/server`. Follow the
@@ -103,14 +99,9 @@ export function Button({ secondary, outline, chip, selected, label, value, type 
 - `export function`, PascalCase, one component per directory, in that
   directory's `index.js`. The directory is kebab-case: `components/day-picker`
   exports `DayPicker`.
-- **Props are destructured in the signature and nowhere else.** The word
-  `props` does not appear in the codebase. The signature is the component's
-  interface, and reading it is how a caller learns what the thing takes.
-- **A flag is a named prop, not a `type` string.** `Button`'s four appearances
-  are three props — `secondary`, `outline`, `chip` — and a default for the
-  fourth, and which heading `ColumnHeader` draws is decided by whether it was
-  given a `title` at all. A prop taking one of a handful of permitted strings is
-  a thing somebody can mistype, and nothing here would catch them.
+- **Destructure props in the signature.** The signature is the component's interface.
+- **A flag is a named prop**, such as `secondary`, `outline` or `chip`, rather
+  than a variant string. Keep actual multi-valued domain props distinct from flags.
 
 ## A boolean prop is compared, never trusted
 
@@ -132,19 +123,16 @@ already makes: the check should say what it accepts.
 
 ## Nothing is decided inside JSX
 
-**Zero `&&` and zero ternaries in any return in the codebase.** A conditional
-child is a variable decided above it:
+**No `&&` or ternaries in JSX.** A conditional child is decided above it:
 
 ```js
-let check = null;
+const check = useMemo(function() {
+  if (completed !== true) {
+    return null;
+  }
 
-if (completed === true) {
-  check = (
-    <svg width='9' height='9' viewBox='0 0 10 10' fill='none'>
-      <path d='M1.4 5.2 3.9 7.7 8.6 2.3' stroke='currentColor' strokeWidth='1.7'/>
-    </svg>
-  );
-}
+  return <span className={ styles.check }></span>;
+}, [ completed ]);
 
 return (
   <div className={ className }>
@@ -155,15 +143,19 @@ return (
 );
 ```
 
+For this web example, `styles.check` masks a component-local `check.svg` through
+the stylesheet convention below. Native conditional children use native components.
+
 `{ tasks.length && <List/> }` renders `0` on an empty list, and it reads as a
 boolean right up until you notice it is markup. The variable is named for the
 thing it is — `check`, `stamp`, `heading`, `body`, `sheet`, `calendar`, `rows` —
 so the return reads as a list of what is on screen and the decisions are above
 it, in the order they were made.
 
-**Rendering nothing is `null`.** Never an element that hides itself: a sheet
-that rendered and went invisible would still be catching every click on the
-board behind it.
+**Return `null` when rendering nothing.** Initialize a conditional child from
+its computed render result, as above, instead of leaving a local variable
+uninitialized. Never render an element that hides itself: it can still intercept
+clicks behind it.
 
 ## A child that can be held is held
 
@@ -177,9 +169,8 @@ const sheet = useMemo(function() {
 }, [ isWriting, openedOn, close, written ]);
 ```
 
-Five of the 23 `useMemo` in the codebase hold JSX like this — a list of rows,
-an empty state, a calendar, a sheet, the columns of a span. A render that
-changed nothing about the child hands React the same element back and there is
+Use `useMemo` for held JSX such as rows, empty states and conditional panels.
+A render that changed nothing about the child hands React the same element back and there is
 nothing to reconcile. It is the same reason
 handlers are `useCallback`: what goes down to a child is a value, and a new one
 every render is a re-render every render.
@@ -225,14 +216,11 @@ This is the web's rule. A native app has no CSS: its styles are a
 import styles from './style.module.css';
 ```
 
-- **One `style.module.css` beside each component**, in that component's own
-  directory, imported as `styles` — 32 of the 33 files that import a stylesheet
-  spell it that way, the exception being the document component, which imports
-  the global sheet as `style` because it is a document rather than a set of
-  names. esbuild handles a `*.module.css` file
-  natively — the class names are local and hashed per file — and the client
-  build emits one `client.css` from everything the bundle imported, which the
-  server shell links. No configuration beyond the file's name.
+- **One `style.module.css` beside each component**, imported as `styles`.
+  The server document imports its global text stylesheet as `style` instead.
+  esbuild handles CSS modules, hashes local class names and emits `client.css`
+  from browser imports; the server document links it.
+
 - **No CSS-in-JS, no `styled`, no `classnames`, no global class names.** Two
   screens sharing a shape share a *component*, not a string they both remember.
 - **The one global sheet is the document's**, imported as text by the component
@@ -277,14 +265,9 @@ the screen through the module stylesheet as a mask:
   wants the same arrow.
 - The client build carries `--loader:.svg=dataurl` for them. The server build
   needs nothing, because it renders only the shell.
-- **These files are the only ones in the repository with no comment in them.**
-  They are inlined as data URLs and `--minify` strips CSS comments where an XML
-  comment inside a `url()` is not — measured at 1.5kb of client sheet for one
-  explained glyph. The explanation goes in the stylesheet beside it.
-- Four files follow this and five components in recent work still carry an
-  inline `<svg>`. **The files are right**; the inline ones are the drift this
-  rule exists to stop, and they get lifted out when the component is next
-  touched.
+- Keep SVG files free of comments: comments can survive data URL embedding.
+  Put the glyph's explanation in the stylesheet. Move existing inline glyphs
+  into component-local SVG files when touching their component.
 
 ## Fonts are installed from fontsource, never fetched from a CDN
 
@@ -310,17 +293,16 @@ import '@fontsource/ibm-plex-mono/latin-400.css';
 
 ## Handlers
 
-**30 `useCallback`, and every function handed to a child or read by an effect is
-one.** The dependency array is exhaustive and lists what the body reads.
+**Every function handed to a child or read by an effect uses `useCallback`.** The dependency array is exhaustive and lists what the body reads.
 
 - The variable is named for what it does — `open`, `close`, `add`, `choose`,
   `pick`, `backlog`, `submit`, `previous`, `next`, `today` — and the prop it
   arrives on is named for the event: `onClick`, `onChange`, `onAdd`, `onClose`,
   `onSelect`, `onWritten`. The child reports what happened; the parent names
   what it does about it.
-- **One handler for a row of controls, with the answer on the element.** Forty
-  calendar cells and four chips share one `choose`, and the day travels in the
-  `value` attribute a button already has —
+- **One handler for a row of controls, with the answer on the element.**
+  Repeated controls can share one `choose`, reading their value from the
+  button's `value` attribute —
   `function({ currentTarget }) { onChange(currentTarget.value); }` — rather than
   in a closure built per cell per render. It is the destructure-what-you-came-for
   rule, applied to a DOM event.
@@ -331,27 +313,44 @@ one.** The dependency array is exhaustive and lists what the body reads.
 
 ## State
 
-- **`useState()` with no argument where there is nothing yet**, and `== null` to
-  ask. Inventing a value to stand for *not yet* is inventing a second kind of
-  nothing — `const [ error, setError ] = useState()`, and `setError()` with no
-  argument is how it is cleared.
+- **Prefer a meaningful initial state when one exists.** Use `useState()` with
+  no argument when there is no value yet. Treat `null` and `undefined` as
+  equivalent absence, following JavaScript's
+  [initialization rule](../javascript/SKILL.md#absence-and-initialization).
+  Do not use `useState(null)` or `useState(undefined)`. For example,
+  `const [ error, setError ] = useState()`; clear it with `setError()`.
+  Check absence with `== null` or `!= null`, and pass optional values directly
+  rather than using `value || null`. Initialize concrete required state, such as
+  a counter map, with its actual initial value.
 - **An updater function wherever the next value is read off the current one**,
   so nothing closes over a stale one:
 
+  Initialize the counter map with `useState({})`. Inside an event or completion
+  handler, derive every previous-state-dependent value from the updater parameter:
+
   ```js
   setTouched(function(current) {
+    const count = current[ column ];
+
+    if (count == null) {
+      return { ...current, [ column ]: 1 };
+    }
+
     return { ...current, [ column ]: count + 1 };
   });
   ```
+
+  Never set state during render. Successive events and asynchronous completions
+  from the same render each advance the counter; do not use an outer captured
+  count, including for invalidation counters read by effects.
 
 - A lazy initial value is a `function` too, and it means *read once*:
   `useState(function() { ... })` opens the picker on the month of the chosen day
   and does not drag a person back to it the moment they page.
 - **Held and derived are different questions.** A column holds its tasks and
   derives its class from its day. Nothing holds a value it could work out from a
-  prop, and nothing holds a value that is already in the URL — the span is read
-  from `useSearchParams` by all three components that care about it rather than
-  passed down from the screen, so they cannot disagree.
+  prop. Read URL-backed state from the selected router rather than keeping a
+  second state value that could disagree.
 
 ## Effects
 
@@ -361,8 +360,7 @@ one.** The dependency array is exhaustive and lists what the body reads.
   above the effect so the array holds a string: `useSearchParams` hands back a
   new object whenever any part of the search string changes, and
   `location.state` is a fresh object after every navigation — an effect
-  depending on an object it also causes runs forever, measured once at 417
-  requests in two seconds.
+  depending on an object it also causes can loop indefinitely.
 - **A number that only goes up is a dependency, not a condition.** A column
   re-reads because `touched[ day ]` changed. There is nothing to guard, nothing
   to compare against and nothing to get wrong; a list of what changed would have
@@ -385,8 +383,8 @@ one.** The dependency array is exhaustive and lists what the body reads.
   than two handlers told apart by the line they were destructured on.
 - A refusal comes back as a rejected promise and the component decides what to
   show: `.catch(function(failed) { setError(failed.message); })` puts the
-  server's own sentence under the field. Swallowing one happens once in the app,
-  and the comment there says why it is allowed to.
+  server's own sentence under the field. Intentionally ignored failures need
+  an explicit reason; ordinary errors must remain visible.
 
 ## Contexts
 
@@ -402,10 +400,9 @@ one.** The dependency array is exhaustive and lists what the body reads.
 - One file exports the `Provider` component and, at the bottom, a `useXxx()`
   that is nothing but a `useContext`. Consumers never import the context object.
 - **The value is `useMemo`'d** over the callbacks it carries. A new object every
-  render re-renders every consumer, and the consumers here are whole screens.
-- A context holds the one question it is about and nothing adjacent to it —
-  `AuthProvider` holds three states and no user, because who is signed in
-  belongs to whatever puts them on screen.
+  render re-renders every consumer, including consumers that render whole screens.
+- A context holds one concern. Derive its state and public interface from the
+  application's actual needs; do not prescribe an authentication model.
 
 ## JSX spacing
 
@@ -418,32 +415,32 @@ one.** The dependency array is exhaustive and lists what the body reads.
 - **Single quotes in attributes**: `<html lang='en'>`, `type='button'`.
 - **Self-closing with no space before the slash**: `<Splash/>`, `<Weekbar/>`,
   `<Day key={ day } day={ day }/>`.
-- A blank line between sibling elements that are more than a word each; none
-  between the three short rows of a `Task`.
+- Use a blank line between substantial sibling elements; closely related short
+  rows may stay together.
 - **One attribute per line once the element stops fitting one line.** A calendar
   cell puts its `key`, `type`, `value`, `className`, `aria-label`,
   `aria-pressed` and `onClick` each on their own, with the closing `>` on a line
   of its own.
 - A comment inside JSX is `{/* ... */}` on its own lines, above what it explains,
   and it says why the markup is shaped that way rather than what it renders.
-- **`key` is the row's own id.** `key={ index }` appears once, on the weekday
-  initials of the calendar, because two Thursdays in a week of seven make the
-  letter a bad key — and the comment above it says exactly that.
+- **`key` is the row's stable id.** An index is appropriate only for a fixed,
+  non-reordered list without an unambiguous natural key; explain that exception.
 
 ## Component comments
 
-A component's comment sits above the `export function` and is often fifteen
-lines: what the thing is, what it deliberately does not hold, what a caller has
-to know, and which alternative was rejected. That header is the documentation —
-there is no other.
+A component's header comment explains its responsibility, necessary caller
+knowledge and non-obvious choices. Scale the comment to those needs.
+
+For native asynchronous font startup, follow the
+[font startup contract](../react-native-expo/SKILL.md#font-startup): pending keeps
+the splash, success renders the application, failure releases the splash and
+renders an error view using system fonts. Keep that view independent of success-only layouts.
 
 ## What this skill does not settle
 
-- **When a JSX element breaks across lines.** It happens when the attributes
-  stop fitting, and where that is has never been agreed: `Button` renders its
-  own seven attributes on one 154-column line, and a calendar cell renders
-  seven on seven lines.
-- **Automated enforcement.** There is no linter. Component scope and minimality
-  are mandatory implementation and review checks regardless of lint tooling.
+- **Line wrapping.** Break attributes across lines when readability requires it;
+  no fixed column threshold is prescribed.
+- **Automated enforcement.** Component scope and minimality remain review checks
+  regardless of lint tooling; do not add tooling incidentally.
 - **What each component is for.** The project's `AGENTS.md` defines the product
   architecture and component boundaries.

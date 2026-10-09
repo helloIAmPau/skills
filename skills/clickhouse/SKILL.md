@@ -1,45 +1,95 @@
 ---
 name: clickhouse
-description: Implement Hybrid ClickHouse access, container configuration and numbered SQL migrations. Use when adding persisted features, changing the entries schema or maintaining the migration runner.
+description: Maintain selected ClickHouse persistence, typed Node client access, container settings and numbered SQL migrations with replay, locking and write guarantees. Does not choose a product schema or storage engine for unrelated projects.
 ---
 
 # ClickHouse
 
-Use ClickHouse for durable application data. Do not add another storage engine implicitly. Ownership, authentication and write semantics remain subject to the relevant approved feature.
+Apply when ClickHouse has been selected. Derive schema, authentication, application
+permissions and write guarantees from the consuming project's approved contracts;
+this skill does not select persistence for another application.
 
-## Database access
+## Database access and schema
 
-- Keep the source-only `@hybrid/clickhouse` workspace with `type: module` and root `index.js`. Declare an exact-pinned `@clickhouse/client` in backend `devDependencies`.
-- Create one module-level official Node client using `CLICKHOUSE_URL`. Export `query(text, values)`, which binds named, typed placeholders such as `{date:Date}` through `query_params` and returns rows parsed from `JSONEachRow`. Do not interpolate user values into SQL.
-- Keep domain projections with their domain code and resolvers thin. Use lowercase SQL keywords and snake_case identifiers; preserve ClickHouse's case-sensitive type, engine and function names.
-- Use synchronous inserts or explicitly wait for asynchronous insert completion when a feature promises read-after-write visibility. Do not assume a MergeTree ordering key enforces uniqueness, that retries are automatically idempotent, or that multiple statements form a transaction. Define these guarantees in each writer's approved contract.
-
-## Entries
-
-- Use one `entries` table with Date, Session, Type, Activity, Reps, Weight, Duration and Quantity represented as `date`, `session`, `type`, `activity`, `reps`, `weight`, `duration` and `quantity`, plus stable `id` and creation timestamp.
-- Store calendar dates in a native `Date` column; exchange `YYYY-MM-DD` strings at the public boundary. The shared `isDate` validator chains `isString` and checks only that format; do not add calendar validity, database-range checks or Date-object conversion to this API type. Preserve the string unchanged and bind it through typed parameters. Native ClickHouse storage retains its own date behavior and supported range. Preserve selected dates independently of server timezone.
-- Types are `BIO`, `ENDURANCE`, `STRENGTH` and `FOOD`; sessions are `MORNING`, `AFTERNOON` and `EVENING`. The app's Weight section reads Bio records. Activity distinguishes Weight, named endurance/strength activities and food measurements such as Calories, Carbs, Fats and Proteins.
-- Preserve absent measurements as nullable fields, never default zeros. Duration is seconds; format it for display. Food measurement rows remain separate. Do not infer totals, reconciliation, duplicate handling or multi-row write atomicity from this shape.
-- Start with MergeTree ordered by `(date, created_at, id)`. Add engines, partitions or indexes only for an established access pattern. Use explicit UUIDs when a feature needs stable logical write identity; a UUID default alone does not prevent duplicate inserts.
+- In the selected npm architecture, use a source-only library such as
+  `@scope/database` with `type: module` and root `index.js`. Declare exact-pinned
+  `@clickhouse/client` in backend `devDependencies` under that architecture.
+- Create one module-level official Node client using the configured endpoint,
+  illustrated as `CLICKHOUSE_URL`. Export `query(text, values)`, binding named,
+  typed placeholders such as `{date:Date}` through `query_params` and parsing
+  `JSONEachRow`. Do not interpolate user values into SQL.
+- Keep domain projections with domain code and resolvers thin. Use lowercase SQL
+  keywords and snake_case identifiers; preserve case-sensitive ClickHouse types,
+  engines and function names.
+- Derive tables, columns, enum values, units and validation from actual requirements.
+  Do not install a product-specific schema. Preserve optional measurements as
+  nullable fields when absence is meaningful rather than inventing default zeros.
+- Use native `Date` storage for calendar dates when that is the selected domain
+  representation. Define the public format/validation contract explicitly and use
+  typed parameters; preserve date meaning independently of server timezone.
+- Choose ordering keys, engines, partitions and indexes for established access
+  patterns. A MergeTree ordering key does not enforce uniqueness. Explicit UUIDs
+  may identify logical writes but do not by themselves prevent duplicate inserts.
+- Use synchronous inserts or explicitly wait for async insert completion when
+  read-after-write visibility is promised. Retries are not automatically idempotent
+  and multiple statements are not implicitly transactional. Define retry, duplicate
+  and multi-row write guarantees for each writer.
 
 ## Migrations
 
-- Keep plain SQL files under root `migrations/`, named with zero-padded sequential prefixes and a purpose. Apply in filename order with `migrations/apply.sh`; add new files after a migration ships rather than editing applied history.
-- Use the native `clickhouse-client` inside the running `clickhouse` Compose service. Source the selected environment first and require `CLICKHOUSE_USER` and `CLICKHOUSE_DB`; never print credentials. Do not add a migration framework or migrate in an application listener.
-- Keep a MergeTree `migrations` ledger containing `name String` and `applied_at DateTime64(3, 'UTC')`. Check filenames before running and skip completed ones. Validate filenames before placing them in ledger SQL.
-- Serialize runners with the server-container migration lock. A lock surviving a killed runner requires inspection before manual removal; do not steal it automatically.
-- Run each SQL file with `--multiquery`, stopping on the first error; write the ledger entry only after the whole file succeeds. Do not claim transactional DDL/ledger rollback. Earlier statements may survive a failure, and a process can stop after SQL succeeds but before the ledger is written.
-- Make migrations safely rerunnable after partial application, using `if not exists` where appropriate. Data migrations need their own replay strategy. After failure, inspect partial state and retry only after confirming replay is safe; never mark an incomplete file as applied. Do not enable experimental transactions to imitate another database.
-- Apply explicitly after database readiness and before serving a release that needs the schema. A Compose dependency is not readiness.
+- Keep plain SQL under root `migrations/`, with zero-padded sequential filenames
+  and a purpose. Apply in filename order using the configured runner, illustrated
+  as `migrations/apply.sh`. Never edit shipped migration history; add a new file.
+- Source selected settings first, require the configured database/user/endpoint,
+  and never print credentials. Use the native `clickhouse-client` and the documented
+  database protocol; host verification requires it installed on the host and a
+  published endpoint. Do not migrate inside an application listener or add a framework.
+- Keep a MergeTree ledger with `name String` and `applied_at DateTime64(3, 'UTC')`.
+  Check filenames, skip completed files, and validate names before using ledger SQL.
+- Serialize every runner targeting the database with a shared server-associated
+  migration lock. Preserve the configured server-container lock when that is the
+  selected mechanism; a host driver may coordinate its acquisition through Docker
+  control operations. A host-local lock alone cannot exclude independent runners.
+  Inspect a lock surviving a killed runner before manual removal; never steal it.
+- Apply each file with `--multiquery`, stopping on the first error. Write its ledger
+  entry only after the complete file succeeds. DDL and ledger writes are not a
+  transaction: prior statements can survive failure, or execution can stop after
+  SQL success but before recording the ledger.
+- Make replay safe after partial application with `if not exists` where appropriate;
+  data migrations require an explicit replay strategy. Inspect partial state before
+  retrying and never mark incomplete files applied. Do not enable experimental
+  transactions to imitate another database.
+- Apply after actual database readiness and before serving a release requiring its
+  schema. Compose dependency ordering is not readiness.
 
 ## Containers and configuration
 
-- Pin the `clickhouse/clickhouse-server` image. Name the service `clickhouse`; join only `backend`. Backend consumers join `backend` and their existing proxy network. Publish no database ports, add no `expose`, health check or `service_healthy` condition.
-- Bind storage and logs under `./data/clickhouse/`, targeting `/var/lib/clickhouse` and `/var/log/clickhouse-server`. Do not delete prior database data as part of changing engines.
-- Configure `CLICKHOUSE_USER`, `CLICKHOUSE_PASSWORD`, `CLICKHOUSE_DB` and `CLICKHOUSE_URL` explicitly with plain Compose interpolation. Keep database credentials out of native bundles. Tooling may receive `HYBRID_E2E_CLICKHOUSE_URL` and join `backend` solely for real E2E fixtures; the app always uses Caddy and GraphQL.
+- Pin the server image, resolve the service name and connect it to the backend
+  network. Backend applications join it when needed. Under the selected Compose
+  convention, omit `expose`, health checks and `service_healthy` conditions.
+- Bind storage/logs under `./data/<database-service>/` to the image's documented
+  paths, such as `/var/lib/clickhouse` and `/var/log/clickhouse-server`.
+  Preserve persisted data; engine changes do not authorize deletion.
+- Supply configured database user/password/name/URL explicitly with plain Compose
+  interpolation. Keep credentials out of native bundles.
+- Development-only host publication is allowed for database/migration tests or
+  defined fixture administration; publish only needed protocol endpoints, with
+  host-loopback bindings for local access. Do not add production publication merely
+  to satisfy tests or give native tooling credentials just to run host test drivers.
 
 ## Verification
 
-Run the full `npm run develop` stack and confirm readiness before all tests via `npm test`. Keep tests flat under `tests/e2e/`. Migration checks run from the Docker-capable host against an isolated database; HTTP/native E2E runs inside mobile tooling using the real database and public gateway.
+Follow the shared [host-test/public-interface contract](../npm-workspace-services/SKILL.md#host-testing-and-public-interfaces)
+and [E2E lifecycle](../npm-workspace-services/SKILL.md#e2e-run-lifecycle).
+Root `npm test` and migration verification drivers run on the host; services remain
+in the selected stack. Keep tests/fixtures flat under `tests/e2e/`. Database tests
+use the documented protocol against an isolated database; application assertions
+use the public gateway/UI. Direct database access is limited to database/migration
+tests or defined fixture administration.
 
-Cover first application, repeat skipping, partial failure without a success ledger, safe retry and runner exclusion. Use real entries with nullable measurements, preserve unrelated records and clean up fixture IDs. Database faults and delays must be controlled real server conditions, never mocked transports or production test flags. Wait for fixture deletions/mutations to complete before proceeding. Validate the compiled backend outside its workspace package scope after changing the client.
+Cover first application, repeat skipping, partial failure without a success
+ledger, safe retry and runner exclusion. Preserve unrelated records and clean up
+fixture identifiers; wait for deletions/mutations to complete. Faults/delays use
+controlled real server conditions, never mocked transports or production test
+flags. Verify compiled backends outside the checkout/package scope after client
+changes. Report unavailable verification accurately.

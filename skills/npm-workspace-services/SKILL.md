@@ -5,7 +5,7 @@ description: Plan or maintain npm workspace web applications with source-only li
 
 # npm workspace services
 
-Use this convention for repositories adopting an npm monorepo with containerized Express services. Derive the package scope from the project; Hybrid uses `@hybrid`. Examples describe structure, not authorization to scaffold applications or choose service boundaries.
+Use this convention for repositories adopting an npm monorepo with containerized Express services. Derive the package scope, paths and selected services from the consuming configuration. Examples describe structure, not authorization to scaffold applications or choose service boundaries.
 
 ## Repository layout
 
@@ -30,22 +30,22 @@ repository/
 - Put each application, service, or shared package under `workspaces/@scope/<module>`, with its own manifest named `@scope/<module>`.
 - Use npm and one root `package-lock.json`. Install from the root; use `npm ci` for reproducible CI and container builds and workspace-targeted scripts for individual modules.
 - Put the source entry `index.js` directly at each JavaScript workspace root; do not introduce a `src` subfolder.
-- For backend workspaces, declare every dependency in the using package's `devDependencies`, including workspace imports, Express, and build tools. Mobile workspaces are the owner-approved exception and may use runtime `dependencies` under the React Native/Expo skill. This convention belongs to the agreed bundled-application architecture; keep development dependencies available during installation and builds. Do not move Express into `dependencies` merely because the running application uses it.
+- For backend workspaces, declare every dependency in the using package's `devDependencies`, including workspace imports, Express, and build tools. When present, mobile workspaces are the exception and may use runtime `dependencies` under the React Native/Expo skill. This convention belongs to the agreed bundled-application architecture; keep development dependencies available during installation and builds. Do not move Express into `dependencies` merely because the running application uses it.
 - Keep client implementation conventions in separate skills. This skill defines repository layout and backend infrastructure.
 
 ## Source libraries and compiled applications
 
 - A library is imported by an application; it is not itself a running service. Libraries declare `"type": "module"` and `"exports": "./index.js"`, exporting their source directly. Importing a library alone must not open a listener.
 - Libraries have no build script, compiler dependency, generated `dist/`, or Compose service. Do not add a prerequisite library compilation step to a consuming application's build or Dockerfile.
-- Compile only exposed application service workspaces. Their esbuild command bundles the root `index.js`, including imported workspace library source and dependencies, into self-contained CommonJS `dist/index.js` with source maps. For the current toolchain, use `--bundle --platform=node --target=node24 --format=cjs --outfile=dist/index.js --sourcemap`.
+- Compile only exposed application service workspaces. Their esbuild command bundles the root `index.js`, including imported workspace library source and dependencies, into self-contained CommonJS `dist/index.js` with source maps. For a selected Node 24 toolchain, use `--bundle --platform=node --target=node24 --format=cjs --outfile=dist/index.js --sourcemap`.
 - Application workspaces own esbuild and their development process tools. Omit `type: module` in application packages producing CommonJS `dist/index.js`, so that output runs both inside its workspace and in the runtime image. Their source can still use ESM because esbuild reads it.
 - Root `npm run build` may use `npm run build --workspaces --if-present`: only application services have build scripts. A repository containing only libraries has nothing to compile; that is a valid state.
 - A library such as `@scope/service` owns its direct imports, including Express, in its own `devDependencies`. Consumers declare the library package in their own `devDependencies` and import it by package name.
-- Do not create a demonstration application or container just to exercise the library. When no application has been selected, keep a Caddy-only stack and a development override containing `services: {}`. Hybrid's example service was explicitly removed; do not recreate it as part of ordinary maintenance.
+- Do not create a demonstration application or container just to exercise the library. When no application has been selected, keep a Caddy-only stack and a development override containing `services: {}`.
 
 ## Shared Express server contract
 
-Use `@scope/service` for the shared server library; Hybrid uses `@hybrid/service`. Its exported declaration is `export const service = function(name, handler)`. A consuming application's root entry calls it:
+Use the configured shared server library, illustrated as `@scope/service`. Its exported declaration is `export const service = function(name, handler)`. A consuming application's root entry calls it:
 
 ```js
 import { service } from '@scope/service';
@@ -69,7 +69,7 @@ service('service_name', function({ router }) {
 
 ## GraphQL schema and resolvers
 
-Application data services use GraphQL under the owner's explicit directive. Follow the consuming project's service boundary and route names in `AGENTS.md`; Hybrid exposes GraphQL through `@hybrid/graphql` at `/graphql`. HTTP health remains a separate route. Use these schema and resolver conventions:
+For selected GraphQL data services, derive service boundaries and route names from the consuming project's instructions. HTTP health remains a separate route. Use these schema and resolver conventions:
 
 - Create the GraphQL application with `@scope/service` and the project's selected service name. Register `createHandler({ schema, rootValue })` with `router.all('/')`; the shared library supplies the service's `/health` and listener.
 - Load SDL from `schema.graphql`, beside the application's `index.js`. Keep schema definitions out of JavaScript. Use GraphQL Tools' `makeExecutableSchema` from `@graphql-tools/schema` to construct the executable schema and `createHandler` from `graphql-http/lib/use/express` to expose it.
@@ -81,17 +81,17 @@ Application data services use GraphQL under the owner's explicit directive. Foll
 Illustrative aggregation once user-related fields exist:
 
 ```js
-// workspaces/@hybrid/graphql/resolvers/index.js
-import * as user from './user.js';
+// workspaces/@scope/data-service/resolvers/index.js
+import * as user from './user';
 
 export const rootValue = {
   ...user
 };
 ```
 
-Load the workspace's SDL with esbuild's `.graphql=text` loader, bundling its text into the application. Construct the executable schema before opening the listener; the owner requested removal of the explicit `assertValidSchema` call, so do not add a separate schema-validation step. The Docker builder's workspace copy and the development workspace bind mount already include the schema; do not add a separate schema copy or mount. Schema edits rebuild/restart the development application; production updates require rebuilding the image. Verify the bundle outside the checkout so schema loading cannot depend on its source path.
+Load the workspace's SDL with esbuild's `.graphql=text` loader, bundling its text into the application. Construct the executable schema before opening the listener; do not add a separate `assertValidSchema` step. The Docker builder's workspace copy and the development workspace bind mount already include the schema; do not add a separate schema copy or mount. Schema edits rebuild/restart the development application; production updates require rebuilding the image. Verify the bundle outside the checkout so schema loading cannot depend on its source path.
 
-The owner confirmed that standard GraphQL responses are compatible with the project's format. Pass `createHandler({ schema, rootValue })` responses through unchanged. Browser clients check GraphQL `errors` even when HTTP status is 200. Health, unmatched routes, and generic Express errors retain the shared response contract.
+Pass `createHandler({ schema, rootValue })` responses through unchanged. Browser clients check GraphQL `errors` even when HTTP status is 200. Health, unmatched routes, and generic Express errors retain the shared response contract.
 
 ## One Dockerfile for backend services
 
@@ -104,7 +104,7 @@ The owner confirmed that standard GraphQL responses are compatible with the proj
 - Standardize application service build scripts and output locations. Emit `dist/index.js` and run `node index.js` from the copied output directory. Source libraries retain their uncompiled root `index.js`.
 - Copying only `dist/` works only when it is self-contained. Otherwise include production dependencies, required workspace packages, native modules, and runtime assets. TypeScript compilation alone does not bundle dependencies.
 - Exclude local dependencies, build outputs, Git metadata, and local environment files from the build context as appropriate. Do not bake `.env` values into images.
-- Keep a runnable `builder` stage with build tools, persist the `SERVICE` argument as `ENV SERVICE=${SERVICE}`, and run the selected workspace's `develop` script when that stage is started. The final stage runs the built entry point directly, independently of development tooling.
+- Keep a runnable `builder` stage with build tools, persist the `SERVICE` argument as `ENV SERVICE=${SERVICE}`, and use container initialization to install after mounts before invoking the selected workspace's `develop` script. The final stage runs the built entry point directly, independently of development tooling.
 
 When a real application service is added, select its module in Compose. This illustrates a placeholder name, not a request to scaffold it:
 
@@ -120,13 +120,79 @@ services:
 
 ## Environment and lifecycle commands
 
-- Environment files are shell-sourceable assignments using `export NAME=value`. Quote values according to shell syntax when needed. Keep local deployment values in ignored `.env` and a safe template in `.env.example`; keep non-secret local development settings in tracked `.env.develop`.
-- Root `npm start` sources `.env` and runs the base `docker-compose.yml` stack with `up --build --detach`.
-- Root `npm run develop` sources `.env.develop` and runs `docker compose -f docker-compose.yml -f docker-compose.develop.yml up --build --abort-on-container-exit`. The development override includes Android tooling and Metro under [react-native-expo](../react-native-expo/SKILL.md). Its separately maintained `ghcr.io/helloiampau/mobile-tools` image owns the generic `mobile-develop` command and uses Debian for Android glibc compatibility. Consume a published digest and select `MOBILE_WORKSPACE=workspaces/@hybrid/mobile`; keep both its Dockerfile and lifecycle script in the tooling repository. Follow the native skill for local candidate verification, mounts and publication. It is not an Express service. Mobile tooling also mounts root manifests and tests as explicit development source exceptions. Use POSIX `. ./file` in npm scripts so sourcing works with npm's default `/bin/sh`.
-- The development override selects `build.target: builder` for application services and bind-mounts `./workspaces:/source/workspaces` for live editing. This source mount is an explicit exception to the persistent-data path rule; keep all runtime data under `./data/<service-name>/`. Do not introduce named or anonymous dependency volumes.
-- Each application service's `develop` script first builds, then runs its esbuild watcher and `node --watch dist/index.js` concurrently. The esbuild watcher follows imports into source libraries; do not add separate library builds or watchers. Stop the companion watcher when either process exits. An application `start` script runs its built entry point.
-- Ensure the output module format works both in the workspace during development and in `/app` at runtime. For CommonJS `dist/index.js`, avoid inheriting a `type: module` package scope.
-- Both environments retain the same host-variable convention, hardcoded service port 80, frontend/backend networks, fixed Caddy TCP ports 80/443, and prohibition on exposed backend ports and health checks.
+- Environment files use shell-sourceable assignments, `export NAME=value`, with
+  shell quoting where needed. Keep deployment values in ignored `.env`, a safe
+  `.env.example`, and non-secret development settings in tracked `.env.develop`.
+  Use POSIX `. ./file` in npm scripts for npm's default `/bin/sh`.
+- Root `npm start` sources deployment settings and starts the base
+  `docker-compose.yml` with `up --build --detach`.
+- Root `npm run develop` sources development settings and runs
+  `docker compose -f docker-compose.yml -f docker-compose.develop.yml up --build --abort-on-container-exit`.
+  Run this long-lived command in a managed terminal/process while checking
+  readiness and running tests separately. Foreground Compose returns when the
+  stack stops: do not put installation after it with `docker compose up && npm ci`.
+- The development override selects `build.target: builder` for backend services
+  and retains `./workspaces:/source/workspaces` for live editing. Source mounts
+  are separate from persistent data under `./data/<service-name>/`. Do not add
+  named or anonymous dependency volumes.
+- Include emulator/Metro tooling only when a native workspace has been selected;
+  follow [react-native-expo](../react-native-expo/SKILL.md) for its distinct lifecycle.
+- Backend `develop` scripts build initially, then run esbuild watch and
+  `node --watch dist/index.js` concurrently. Start them only after the install
+  barrier below. Stop the companion process if either exits. Source libraries
+  need no separate builds/watchers. Application `start` runs compiled output.
+- CommonJS output must run both inside its development workspace and outside
+  the checkout's package scope in the runtime image.
+
+## Post-mount installation barrier
+
+This is the shared development initialization contract for service containers
+and selected native tooling:
+
+1. Start containers so the development bind mounts are active.
+2. In each environment that builds/runs an application, install from its effective
+   workspace root with `npm ci` using the existing valid lockfile.
+3. Wait for successful installation before advancing. Failure stops startup:
+   no initial build, native preparation, application watchers, Metro or readiness.
+4. Perform the initial build or native preparation requiring dependencies.
+5. Start application watchers, Metro and other long-running development processes.
+6. Declare readiness only after the relevant application/service/device is ready.
+
+The effective root must see the current root manifests/lockfile and all selected
+workspace manifests after mounts. Refresh image-copied root inputs when they change;
+never install against stale image manifests while consuming updated mounted sources.
+
+Implement the barrier in container/startup initialization. For a private backend
+root, a sequential entry command can be `npm ci && npm run develop --workspace=@scope/service_name`
+from `/source`; the selected `develop` script must build before launching watchers.
+Replace the example package with the configured service. When roots share writable
+dependency paths, use a serialized installation coordinator and explicit successful
+completion barrier before starting any consumer; do not run competing `npm ci`
+commands on those paths. An image-build install may be needed for the image but
+does not replace this post-mount installation.
+
+An install in one container's private root does not provision another container.
+Account for dependencies under both root and workspace-local `node_modules`:
+workspace directories mounted writable can put installed artifacts in the host
+checkout. Do not claim all container-installed dependencies are host-isolated.
+Verify that workspaces requiring incompatible versions each resolve their locked
+version through the selected application resolver, including nested installations.
+
+Before sharing writable dependency trees, check platform and native module ABI
+compatibility. Runtimes with incompatible artifacts need compatible, separately
+provisioned dependency paths while retaining the source bind mounts. Never let a
+host tool or another runtime consume an incompatible tree. Keep generated
+dependency directories ignored by Git.
+
+On root/workspace manifest or lockfile changes, stop affected application processes,
+serialize installation, wait for success, then rebuild/restart. Watchers must not
+observe a partially rewritten tree. Use `npm install` only for intentional
+dependency/lockfile changes, never as a silent fallback when locked installation fails.
+
+Host test tools require a separate host installation from the effective checkout
+root with `npm ci`, plus any host-native prerequisites. Stop affected processes
+and coordinate with container installs if paths overlap. Container tooling does
+not satisfy host executable prerequisites.
 
 ## Compose and Caddy
 
@@ -138,8 +204,18 @@ services:
   do not require a development-only container in the base Compose file.
 - Shared libraries have no Compose entries, `depends_on` entries, or proxy targets. When removing an application, also remove its workspace dependency, lockfile entries, Compose service, development override, and Caddy routes; remove now-unused build tools with that workspace.
 - Hardcode Caddy's image with an exact release version in `docker-compose.yml`. Caddy does not maintain a separate LTS line; verify and pin the latest supported stable release. Do not use floating tags or an image environment variable.
-- Caddy is the only service allowed to publish ports. Publish only TCP ports `80:80` and `443:443`. Do not add a UDP port mapping. Store the full Caddy site address, including `http://` or `https://`, in `.env` as `<PROJECT>_HOST`, replacing `<PROJECT>` with the actual project name in uppercase (for example, `HYBRID_HOST` for Hybrid). Use that concrete variable name consistently in environment files, Compose, and documentation, and interpolate it directly into the Caddyfile. Never prepend a scheme or append a port in Compose. Keep the published ports fixed at 80 and 443; the address scheme controls which protocol is served. An explicit `http://` address serves HTTP without automatic HTTPS; `https://` enables HTTPS with HTTP redirects. For local development use `http://localhost`, or `https://localhost` with Caddy's local CA.
-- Backend services must have neither `ports` nor `expose` entries. External clients reach them only through Caddy. Name the networks `backend` and `frontend`. Connect Caddy and HTTP services it proxies to `frontend`. Connect dependencies such as databases to `backend`, and attach application services to `backend` only when they need those dependencies. Caddy does not need `backend`. Do not set `internal: true` on either network. Address HTTP upstreams as `http://<service-name>`, using the hardcoded port 80 without a port suffix.
+- Caddy is the sole entry point for HTTP application traffic. Publish its TCP
+  ports 80/443; do not add UDP publication. Store its full site address including
+  scheme in the configured environment variable (for example `PUBLIC_URL`).
+  Interpolate that address directly in the Caddyfile; do not prepend a scheme or
+  append a port there. Explicit `http://` disables automatic HTTPS; `https://`
+  enables it. Local access may use localhost with an appropriate trust setup.
+- Development configurations may publish ADB and other documented service
+  protocols required by host tests, including database infrastructure tests.
+  Publish Metro where a host driver needs it. Expose only required endpoints,
+  bind to host loopback for local-only access, and keep development-only mappings
+  out of production configuration. See the host-test contract below.
+- Backend HTTP application services must have neither `ports` nor `expose` entries. External clients reach them only through Caddy. Name the networks `backend` and `frontend`. Connect Caddy and HTTP services it proxies to `frontend`. Connect dependencies such as databases to `backend`, and attach application services to `backend` only when they need those dependencies. Caddy does not need `backend`. Do not set `internal: true` on either network. Address HTTP upstreams as `http://<service-name>`, using the hardcoded port 80 without a port suffix.
 - Never use Docker-managed named or anonymous volumes or a top-level `volumes` declaration. Use host bind mounts for every service's persistent storage, with all persistent-data sources under `./data/<service-name>/`. The development source bind mount described above is separate from persistent storage. For example, bind `./data/caddy/data` to `/data` and `./data/caddy/config` to `/config`. Keep `data/` ignored by Git and excluded from image build contexts. Stateless services need no storage mount.
 - Define the Caddyfile inline under top-level `configs.caddyfile.content` in `docker-compose.yml`. Grant the Caddy service the `caddyfile` config with target `/etc/caddy/Caddyfile`. The Compose key is `configs`, plural; inline content requires Compose 2.23.1 or newer.
 - Use `.env` for deployment-specific settings and Compose interpolation in the inline config. Use only plain `${VARIABLE}` references in Compose. Do not add defaults, fallbacks, required-value checks, error messages, or any other interpolation operators. Document explicit deployment values in `.env.example`; ignore `.env` and private environment variants. Track only non-secret `.env.develop` settings.
@@ -152,10 +228,75 @@ services:
 - In a Caddy-only stack, `@unmatched path *` covers every request. There is no public application health endpoint until an application is present and routed. Narrow this matcher when adding proxy paths, including both the exact service prefix and its descendants where needed.
 - When replicas are requested, configure upstream discovery or explicit upstreams and balancing deliberately. A single-backend route does not establish verified replica load balancing.
 
+## Host testing and public interfaces
+
+Root `npm test` and every test-driver process run on the host: Node tests, Maestro,
+recording tools and migration verification tools. Containers run the services,
+emulator, app and development servers under test. Host Docker/Compose commands
+may control them, but must not execute the test suite inside a service container.
+
+| Target | Host access |
+| --- | --- |
+| HTTP application | Configured host-reachable public URL through Caddy |
+| Native app/emulator | Published ADB server, used by host-native tools |
+| Metro/development tooling | Documented host endpoint where needed, with a working device-side connection |
+| Other services, including database infrastructure | Documented public protocol published to the host when required |
+
+HTTP application tests must use the gateway; never publish individual backend
+HTTP ports for a bypass. Let the HTTP client derive ordinary Host/authority from
+the request URL; do not supply a manual Host header or use an internal gateway
+name as the host test destination. Configure routing for the actual host/device
+public URLs. Do not use container IP discovery or Docker-only DNS destinations
+for host tests. Host and device `localhost` are different addressing contexts.
+
+Application behavior assertions use the public API/UI, without in-process
+application imports, internal implementation access or mocked transports. Direct
+database access is appropriate for database/migration interface tests or explicitly
+defined fixture administration, never as a replacement for application assertions.
+No test-suite bind mount or test-only database credentials in native tooling are
+needed merely to run the host suite. Missing host tools, devices, ports or services
+are failures/blockers, never skipped passing tests.
+
+## E2E run lifecycle
+
+For repositories using this selected E2E-only workflow, the developer/agent runs
+these separate steps for every required suite run:
+
+1. Tear down any previous test stack, then start a fresh complete applicable
+   development stack with `npm run develop` in a managed process.
+2. Wait for post-mount installation, initial builds, watchers and actual
+   service/device readiness.
+3. Run the selected migration process where applicable and wait for success.
+   Report missing required migration tooling rather than inventing a command.
+4. Run the entire suite with root `npm test` on the host.
+5. Tear down the stack after success or failure, including setup/migration failure;
+   preserve persisted data unless removal is separately authorized.
+
+Keep startup, migration application and teardown outside `npm test`, test hooks
+and helpers; do not wrap the lifecycle in test scripts. Host migration verification
+may exercise replay/locking against an isolated database as test behavior, but
+must not apply the application's required startup migrations from test hooks.
+Keep all tests/fixtures directly in `tests/e2e/`, without feature/platform folders
+or feature-specific test commands. Do not add unit/in-process integration tests,
+mocked transports or demonstration applications under this workflow. Correct
+failures and rerun the full lifecycle; report unavailable verification honestly.
+Publication authorization is separate where
+[github-feature-workflow](../github-feature-workflow/SKILL.md) applies.
+
 ## Apply and verify
 
-Read existing manifests and repository instructions before edits. Preserve established service boundaries and public contracts. Leave unchosen database, authentication, API, and language decisions open. Keep planning distinct from implementation and honor the user's commit instructions.
+Read current manifests and instructions. Preserve selected boundaries and public
+contracts; language-skill use alone does not choose database, authentication or
+architecture. Honor existing user authorization and commit instructions.
 
-For actual changes, check workspace discovery, direct library source imports, affected application build scripts, Compose configuration, and relevant startup and routing as available. Verify application bundles outside their package scope when an application exists; do not build a source-only library merely to perform that check. A native Caddy check can supplement validation when Docker is absent, but does not verify container builds or Docker network routing. Avoid printing resolved configuration containing secrets. Report checks that could not run. Apply the workspace ownership convention at the end of each filesystem-changing operation, excluding generated outputs where allowed.
+Check workspace discovery, library source imports through the selected bundler/
+resolver, application builds, Compose configuration and routing as available.
+Do not require source libraries to resolve through unmodified native Node ESM or
+add library compilation/loaders as a workaround. Run compiled application output
+outside the checkout and its package scope when an application exists. A local
+Caddy configuration check alone does not verify Docker builds or network routing.
+Avoid printing resolved secrets. Distinguish documentation validation from a real
+stack/E2E run, and report checks that could not run.
 
-Respect project decisions recorded in `AGENTS.md`. Hybrid uses E2E tests only under the owner's development agreement. For each test run, the developer or coding agent starts a fresh entire development stack with `npm run develop`, confirms readiness, runs the project's migrations, runs the complete tests, then tears down the stack even after a failure. Execute these as separate commands under [github-feature-workflow](../github-feature-workflow/SKILL.md#3-run-e2e-tests-and-return-to-implementation-on-failure); do not automate the lifecycle in test scripts or helpers. When migration tooling does not yet exist, report that fact rather than inventing a command. Run the complete suite with root `npm test` in the project's running development test container. HTTP E2E requests go through Caddy; when a native application is present, use Maestro under the mobile skill. Tests do not manage stack startup, migrations or shutdown. Keep all tests and fixtures directly in `tests/e2e/`; do not add feature-specific test commands. Do not add unit tests, in-process integration tests, mocked transports, a fixture workspace, or a replacement example service.
+Apply [workspace-ownership](../workspace-ownership/SKILL.md) to authored filesystem
+changes before handoff, including touched metadata, using owner UID `1000`.

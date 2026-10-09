@@ -1,21 +1,15 @@
 ---
 name: rust
-description: Write and review Rust code in helloIAmPau's style, derived from pul.se and Olivia. Apply to Rust modules, error handling, async execution, typed configuration and Cargo manifests; project architecture and test policy remain in AGENTS.md.
+description: Write and review Rust modules with two-space layout, separate imports, explicit matches and returns, domain errors and typed async data. Architecture and test policy remain with the consuming project.
 ---
 
 # Rust
 
-Match the owner's Rust code rather than substituting generic idiomatic Rust.
-These conventions are inferred from the Rust source in
-[pul.se](https://github.com/helloIAmPau/pul.se) and
-[Olivia](https://github.com/helloIAmPau/olivia). The
-[source reference](references/source-style.md) records the inspected commits,
-representative files and variations. Read it when deciding whether an unusual
-pattern is a convention or an exception.
-
-Follow the consuming project's `AGENTS.md` for architecture, dependencies,
-concurrency, persistence and verification. This skill defines the Rust code's
-shape. Its examples do not authorize importing either project's infrastructure.
+Apply these Rust conventions while following the consuming project's applicable
+instructions for architecture, dependencies, concurrency, persistence and
+verification. This language skill does not select infrastructure. Read the
+[style variations](references/source-style.md) when choosing an error family,
+initialization form or permitted control-flow exception.
 
 ## Layout and formatting
 
@@ -39,11 +33,11 @@ shape. Its examples do not authorize importing either project's infrastructure.
 - In multiline structs, enum definitions and initializers, separate entries
   with commas and omit the final trailing comma. Multiline block `match` arms
   commonly end in `},` except the final arm. Terminate statements with `;`.
-- Keep short signatures, calls and builder chains on one line as in the source.
-  There is no demonstrated hard 80-column limit. Break genuinely unwieldy code
+- Keep short signatures, calls and builder chains on one line when readable.
+  There is no hard 80-column limit. Break genuinely unwieldy code
   for readability while preserving two-space indentation.
 - Do not run stock formatter defaults over the repository: preserve the
-  observed indentation and comma layout. Use an existing compatible
+  selected indentation and comma layout. Use an existing compatible
   formatter configuration if present, and review its output against this skill.
   Do not introduce a formatter or linter as an incidental style change.
 
@@ -69,7 +63,7 @@ return Ok(client);
 
 - Do not replace these matches with `?`, `.map_err(...)`, `try!`, `if let`
   or `let ... else` when writing code in this style. Explicit handling is
-  consistent across both inspected projects, rather than a one-file preference.
+  the selected convention for fallible operations.
 - Match `Option` explicitly when extracting a value, choosing a fallback or
   returning an error. Match compound states directly, such as `Ok(Some(entry))`,
   `Ok(None)` and `Err(error)`.
@@ -79,18 +73,17 @@ return Ok(client);
   report, retry or intentionally ignore them.
 - Prefer guards that return or continue before the main work. For a negative
   boolean test, write `condition == false`; positive tests such as
-  `if values.is_empty()` are also used. Do not introduce `if !condition`.
-- `if`/`else` is allowed for genuine two-way selection. Both repositories use
-  it; the JavaScript skill's ban on `else` does not apply to Rust.
+  `if values.is_empty()` are permitted. Do not introduce `if !condition`.
+- `if`/`else` is allowed for genuine two-way selection; the JavaScript skill's ban on `else` does not apply to Rust.
 - Use ordinary `for`, `loop`, `break` and `continue` for sequential operations
   and stateful execution. Small iterator closures such as `.any(...)`,
-  `.map(...)` and `.collect(...)` are also present; do not ban them or convert
+  `.map(...)` and `.collect(...)` are also permitted; do not ban them or convert
   a readable operation into a long combinator chain.
 - Do not use `.unwrap()` or `.expect()` for operational errors. Non-panicking
-  `.unwrap_or(...)` for an intentional fallback is present in pul.se; it is
-  not the same pattern. Defaults must still follow the project's config rules.
-- Olivia uses `panic!` for fatal startup/CLI failures, while pul.se logs and
-  returns. Preserve the chosen entry-point policy. Do not carry startup panics
+  `.unwrap_or(...)` is permitted for an intentional fallback. Defaults must
+  follow the project's configuration rules.
+- Fatal startup/CLI failures may panic or log and return according to the chosen
+  entry-point policy. Do not carry startup panics
   into recoverable task, model, database or tool execution paths.
 
 ## Types, constructors and ownership
@@ -101,13 +94,12 @@ return Ok(client);
 - Put construction/loading behavior on the owning type: `new`, `load` and
   small domain methods. Build resources step by step, then return the instance.
   An async constructor is appropriate when construction actually needs I/O.
-- Both `field: field` and field shorthand occur. pul.se favors explicit field
-  names; Olivia commonly uses shorthand. Follow the nearby initializer style;
-  in a new module, shorthand is supported by the more recent Olivia code.
+- Both `field: field` and field shorthand are permitted. Follow nearby
+  initializer style; use shorthand in a new module unless local rules differ.
 - Pass one named parameter/configuration struct when the domain already has
   one. Borrow inputs such as `&str`, `&self` and `&mut self` where appropriate,
   and move owned configuration into its owner. Do not import JavaScript's
-  two-positional-argument limit: Rust source has larger signatures.
+  two-positional-argument limit: larger signatures are permitted when appropriate.
 - Use `.to_string()` when an owned string is needed from borrowed text. Clone
   when ownership requires it, such as shared `Arc` handles or retained messages;
   do not add clones to avoid considering ownership.
@@ -116,11 +108,10 @@ return Ok(client);
 
 ## Errors
 
-Write named domain errors and their `Display` implementation by hand. Olivia
-uses enums that retain underlying typed errors; pul.se also uses a
-`<Domain>ErrorKind` enum plus a `<Domain>Error` struct containing kind and message.
-Preserve the error family already used by the module. For a new integration
-module, Olivia's typed enum is the closer model:
+Write named domain errors and their `Display` implementation by hand. A typed
+enum can retain underlying errors; a `<Domain>ErrorKind` enum and `<Domain>Error`
+struct with kind and message are also permitted. Preserve the module's error
+family. Prefer a typed enum for a new integration module:
 
 ```rust
 use std::io::Error as IoError;
@@ -148,7 +139,7 @@ Map errors explicitly at the boundary, and propagate an existing domain error
 unchanged when it already expresses the failure. Do not introduce `anyhow`,
 `thiserror`, automatic `From` conversions or a global boxed-error abstraction
 merely to shorten the code. Implement additional standard traits when an actual
-API contract requires them; their absence in the samples is not a prohibition.
+API contract requires them; these conventions do not prohibit required traits.
 
 ## Async work and external data
 
@@ -156,10 +147,9 @@ API contract requires them; their absence in the samples is not a prohibition.
   matches as synchronous code. Tokio-based programs use `#[tokio::main]`.
 - Make shared ownership and locking visible with `Arc` and the mutex type
   appropriate to the operation. Release guards when their protected work ends;
-  do not add shared state or spawned tasks just because Olivia has services.
-- Follow the project's concurrency contract. Hybrid requires one sequential
-  model/tool loop per agent with concurrency across separate engine instances.
-  Olivia's `JoinSet` service startup is not permission to parallelize that loop.
+  add shared state or spawned tasks only when required.
+- Follow the project's concurrency contract. A service-startup task collection
+  does not authorize parallelizing a domain loop that must remain sequential.
 - Use typed Serde request/response/config structs and explicit parsing. Use
   `#[serde(rename_all = ...)]`, tagged enums and named `default_*` functions
   when those shapes or defaults are actually needed. Derive `JsonSchema` only
@@ -167,9 +157,8 @@ API contract requires them; their absence in the samples is not a prohibition.
 - Compose readable strings with `format!`; use raw multiline strings for
   substantial prompts or text templates. Keep wire format, schemas and prompt
   policy specific to the consuming application.
-- Use parameterized database calls with values supplied separately, as in
-  pul.se's PostgreSQL wrapper. Do not transfer Olivia's model-facing arbitrary
-  SQL tool into Hybrid's internal persistence layer.
+- Use parameterized database calls with values supplied separately. Derive
+  query capabilities and permissions from the selected persistence contract.
 
 ## Comments, Cargo and verification
 
@@ -177,15 +166,14 @@ Use comments for intent, protocol constraints and non-obvious behavior. Use
 `///` descriptions for schema-exposed parameters when callers or the model need
 their meaning. Avoid adding comments that merely narrate each Rust statement.
 
-Both inspected projects use Rust edition `2024`, regular Cargo dependencies and
-feature lists. Follow the consuming crate's manifest; use edition `2024` for new
-crates in this project unless its toolchain contract says otherwise. Verify
-dependency versions when selecting them. The examples do not require Wasmtime,
-GStreamer, LiteLLM, Axum, S3 or any particular database driver.
+Follow the consuming crate's manifest and feature lists; use edition `2024` for
+new crates unless its toolchain contract says otherwise. Verify dependency
+versions when selecting them. Examples do not select a server framework,
+storage engine or service integration.
 
 Verify compilation and behavior through the consuming project's required
-commands. The inspected source does not establish a Rust unit-test convention.
-Hybrid's E2E-only policy remains in its `AGENTS.md`; do not add a competing
-`cargo test` policy through this skill. During review, check the two-space
-layout, separate imports, explicit matches/returns, domain errors and the
-project's actual execution invariants.
+commands. This skill does not impose a Rust unit-test architecture. When the
+selected workflow requires host E2E verification, follow the
+[shared host-test contract](../npm-workspace-services/SKILL.md#host-testing-and-public-interfaces).
+Review two-space layout, separate imports, explicit matches/returns, domain
+errors and the project's actual execution invariants.

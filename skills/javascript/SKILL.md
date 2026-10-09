@@ -5,40 +5,22 @@ description: Write and review JavaScript source and tests using the project conv
 
 # JavaScript
 
-Adapted from [helloIAmPau/skills JavaScript skill](https://github.com/helloIAmPau/skills/blob/master/javascript/SKILL.md), with local architecture notes for Hybrid. Counts and application-specific examples describe the upstream repositories, not this project. Follow this project's `AGENTS.md` when instructions conflict; examples do not select databases, authentication, API contracts, or service boundaries. Follow [react](../react/SKILL.md) for components, JSX, hooks and contexts, and [react-native-expo](../react-native-expo/SKILL.md) for native application structure, styling and device E2E tests.
+Follow the consuming project's applicable instructions and the user's explicit decisions.
+Use [react](../react/SKILL.md) for components, JSX, hooks and contexts, and
+[react-native-expo](../react-native-expo/SKILL.md) for selected native applications.
 
-For package layout, dependency placement, application builds, containers, and the shared HTTP contract, use [npm-workspace-services](../npm-workspace-services/SKILL.md). In that architecture, libraries export their root `index.js` source directly and only exposed application service workspaces compile. The JavaScript rules below apply to both kinds of source.
-
-For Hybrid database code, follow [clickhouse](../clickhouse/SKILL.md), including typed named parameters and ClickHouse SQL semantics. Upstream SQL examples below illustrate JavaScript structure, not a choice of database or parameter syntax for Hybrid.
-
-**This file is about JavaScript and nothing else.** SQL appears in it only as
-SQL written *from* JavaScript — how a query string is built and how values
-reach it. The `.sql` migration files, the CSS, the shell scripts and the
-Dockerfiles have conventions of their own, and none of them are here. A second
-language gets a second skill rather than a section in this one. React-specific
-conventions live in the separate [react](../react/SKILL.md) skill; these language
-rules also apply to the JavaScript used in React applications.
-
-**Existing conventions were read out of the code.** The counts are given so a
-reader can check. Explicit owner requirements take precedence over existing
-code; update code that violates them.
-
-There is no linter and no formatter. The style holds because people match what
-is already there, which is exactly the knowledge a fresh container lacks.
-
-The counts come from one application repository — 3,716 lines of source across
-58 files plus 2,117 lines of tests, with `dist/` and `node_modules/` excluded —
-and were checked against the service repositories that share the style. 2,492 of
-those source lines are the React web workspace. React-specific instructions
-are maintained in the separate React skill.
-
----
+This skill defines JavaScript conventions, not architecture. Apply
+[npm-workspace-services](../npm-workspace-services/SKILL.md) only when that
+architecture is selected. Its libraries export source and its application services
+bundle it; language-skill use alone must not scaffold infrastructure or change architecture.
+Use [clickhouse](../clickhouse/SKILL.md) only for selected ClickHouse persistence.
+SQL examples here illustrate JavaScript structure; derive parameter syntax from
+the actual database. CSS, shell, Dockerfiles and SQL migrations have separate conventions.
 
 ## The shape of a function
 
-**The `function` keyword, always. Zero arrow functions in 3,716 lines of source
-and 2,117 of tests**, and none in the sibling repositories either. A callback is
-a `function`, and so is a `.map` over a list:
+**Use the `function` keyword, including callbacks.** Do not use arrow functions.
+A `.map` over a list takes a `function` too:
 
 ```js
 return pool.query(text, values).then(function({ rows }) {
@@ -49,11 +31,9 @@ return pool.query(text, values).then(function({ rows }) {
 - **No space before the parens, ever** — `function(request, response)`, the
   same as a named declaration. Older files carry a spaced form; convert them
   when you touch them.
-- Exports differ between repositories: `export function mint()` in some,
-  `export const mint = function() {}` in others. Match the file you are
-  editing before matching this page. Here it is `export function`, 64 times and
-  without exception.
-- No classes anywhere.
+- Prefer `export function mint()` for named exports. Preserve a selected
+  interface that uses `export const mint = function() {}`.
+- Do not use classes.
 
 ## Arguments
 
@@ -77,9 +57,32 @@ export function attach({ response, token, days }) { ... }
   `function(request, response, next)` and stays that way.
 - Express error middleware keeps all four arguments:
   `function(error, request, response, next)`, even when its body only returns
-  `response.error(error)`. The shared factory keeps the approved export form
+  `response.error(error)`. The shared factory keeps the selected export form
   `export const service = function(name, handler)`; callers configure it with
   `function({ router })`.
+
+## Absence and initialization
+
+Treat `null` and `undefined` as the same absence. Use `value == null` or
+`value != null` when checking optional values; do not distinguish the two for
+ordinary absence handling.
+
+Prefer initializing local variables with a real, meaningful value at declaration.
+Avoid bare declarations such as `let selected;`. Derive the value before declaring
+it, or compute it with guard-based control flow. Use `const` for values that do not
+change; use an initialized `let` when reassignment is needed. Do not invent an
+unrelated placeholder just to supply an initializer.
+
+Do not initialize missing values explicitly to `null` or `undefined`. Omit missing
+object fields and avoid parameter defaults that merely spell out absence. Concrete
+initial values such as zero for a counter or an empty collection are appropriate
+when they represent the actual starting state. React state with no value yet uses
+`useState()` rather than an explicit absence initializer.
+
+Pass optional values directly. Use `variable`, never `variable || null` or
+`variable ?? null` to normalize absence. An absent value needs no replacement.
+React follows the same rule with `useState()`; see its
+[state guidance](../react/SKILL.md#state).
 
 ## No operator stands in for a check
 
@@ -90,52 +93,40 @@ export function attach({ response, token, days }) { ... }
 // all arrive here as the same empty string
 const email = String(request.body?.email ?? '').trim().toLowerCase();
 
-// yes: the check says what it accepts
-const body = request.body;
-let email = '';
+// yes: guard absence and wrong types before the main path
+function readEmail(body) {
+  if (body == null) {
+    return '';
+  }
 
-if (body != null && typeof body.email === 'string') {
-  email = body.email.trim().toLowerCase();
+  if (typeof body.email !== 'string') {
+    return '';
+  }
+
+  return body.email.trim().toLowerCase();
 }
 ```
 
-The long form is longer, and it says three things the short one throws away:
-that a body might be absent, that the field might not be a string, and what
-happens when either is true. An operator that quietly handles absence is one
-that stops you asking which absence it was — and the answer is usually the
-thing worth knowing.
+The explicit checks distinguish a missing body from an invalid field and make
+handling visible. Both `value == null` and `value != null` are allowed.
+Prefer guards with early exits to unnecessary nested conditionals.
 
-The same objection applies one step later to a default: `?? ''` spends the last
-chance to say what was missing.
-
-**No `!` either. Zero unary `!` in 3,716 lines**, against 11 `!==` and 20
-`== null`. A truth test asks a question nobody wrote down — `!stamped` is true
-of `undefined`, of `''` and of `0` alike — and the character itself inverts a
-line while being the easiest one on the keyboard to miss. Both directions are
-written out:
+**No unary `!` or implicit truth tests.** Write boolean comparisons explicitly:
 
 ```js
 // no
 if (!isPicking) { ... }
 if (chip) { ... }
 
-// yes: 14 `=== true` and 10 `=== false` in the codebase
+// yes
 if (isPicking === false) { ... }
 if (chip === true) { ... }
 ```
 
-This is the same rule as `===`, one step further: a comparison says what it
-accepts, and a coercion says only that something was there.
-
-**`|| {}` is the one allowance, four times, and each one says so in a comment
-above it.** `request.body = request.body || {}` in `@scope/service`, and
-`const { email } = location.state || {}` in the three screens that are only ever
-navigated to. It is allowed exactly where the two absences are genuinely the
-same absence and nothing downstream could act on the difference: a navigation
-state that is missing and one carrying no address both mean *nothing navigated
-here*. A bare destructure would throw on the case the line exists to handle.
-That is the whole of the allowance — it is not a licence for `?? ''`, which
-defaults a value rather than a container.
+**`|| {}` is the only fallback-operator allowance.** Use it only for container
+defaulting where an absent container and an empty one have the same meaning,
+such as `const { email } = location.state || {}`. Explain that equivalence in a
+comment. This does not permit value defaulting such as `?? ''`.
 
 ## Where a function lives
 
@@ -154,13 +145,16 @@ function upsert(email, timezone) {
 
 upsert(email, timezone).then(function({ id }) { ... });
 
-// yes: the query, where it is wanted
+// yes: the query, where it is wanted; timezone was already validated
 query(`
   insert into users (email, timezone) values ($1, coalesce($2, 'UTC'))
   on conflict (email) do update set timezone = coalesce($2, users.timezone)
   returning id
-`, [ email, timezone || null ]).then(function([ { id } ]) { ... });
+`, [ email, timezone ]).then(function([ { id } ]) { ... });
 ```
+
+The example assumes `timezone` has already been validated for the query contract.
+Pass it directly; do not normalize an absent value with `timezone || null`.
 
 Extract when a **second** caller appears, not in anticipation of one. For React
 components and hooks, follow the [single-responsibility extraction rule](../react/SKILL.md#one-scope-per-component-always),
@@ -170,25 +164,17 @@ The exception is an exported interface. A library's `verify` having one caller
 today does not make it private — that is the shape the library offers, not an
 accident of who currently uses it.
 
-**Repeating a shape is not a second caller.** `@scope/validations` writes the
-same three lines twenty times — `const failed = new Error(...)`,
-`failed.status = 422`, `throw failed` — and does not extract them. What differs
-between them is the sentence, which is the whole of what the extracted function
-would contain; what is left is a constructor call and one assignment, and a
-`refuse('The title is required')` would hide the status that is half the reason
-the lines exist. Extract a second *caller*, not a second *typing*.
+**Repeating a shape is not a second caller.** Similar error construction can
+stay inline when the message and status are the meaningful differences. Extract
+shared behavior, rather than hiding those decisions behind a helper name.
 
-**One module-level helper with one caller survives, and it is worth knowing
-why.** `components/plan`'s `spanAround` is called once, on the line below it.
-It stays a named function because the name is the decision: it is the only
-`startOf('isoWeek')` in the project, the one moment a week is chosen rather
-than read, and a comment above it says which other `startOf('isoWeek')` is not
-this decision said twice. A name that is the explanation earns its jump. A name
-that is a summary of the body does not, which is every other case.
+A single-caller named helper may remain when its name explains a domain decision
+that would otherwise need a comment. A name that only summarizes the body does
+not justify extraction.
 
 ## Control flow
 
-**Guard, then return.** Check exit or no-op conditions first and return immediately; keep the main path outside conditional blocks. There is no `else` in the codebase, and no ternary.
+**Guard, then return.** Check exit or no-op conditions first and return immediately; keep the main path outside conditional blocks. Do not use `else` or ternaries.
 
 ```js
 if (typeof token !== 'string') {
@@ -199,46 +185,34 @@ const publicKey = Buffer.from(process.env.TOKEN_PUBLIC_KEY, 'base64').toString()
 ```
 
 - **`if`, never a ternary.** A ternary is an expression pretending to be a
-  decision, and it stops reading as one the moment either branch grows. There
-  are none; keep it that way.
-- **Exact match always — `===` and `!==`.** The one exception is `== null`,
-  which is not a comparison: it asks *is this absent*, and the loose form is
-  the only one that answers null and undefined together. That is the whole of
-  the exception; `== 0` and `== ''` are not covered by it.
-- `try`/`catch` appears **once**, around `jwt.verify`, because that library
-  throws for something ordinary: a caller who is not signed in. A catch is for
-  converting someone else's exception into your own normal case, not for
-  hiding failures — everywhere else, a rejected promise is left to reject **into
-  the error handler**, which is what returning the chain is for. Left to reject
-  with nothing to receive it is not restraint, it is a dead process; see
-  Promises below.
+  decision, and it stops reading as one the moment either branch grows.
+  Use explicit guards and returns.
+- **Exact match — `===` and `!==`.** Permit both `== null` and `!= null`
+  to check null and undefined together. This exception does not cover `== 0`
+  or `== ''`.
+- Use `try`/`catch` to translate an external exception into an intentional normal
+  case, such as an invalid credential. Do not hide operational failures; return
+  rejected promise chains to their error handler.
 
-**No loop in the source. Zero `for` in 3,716 lines**, and one `while` — the
-calendar grid walking day by day to an end it cannot count to in advance.
-Iteration is `map`, `Array.from({ length }, function(_, offset) { ... })` and
-`forEach`, because each of those says what the loop is *for* in its name, where
-a `for` says only that something is repeated. The four `for` loops in the
-repository are all in the tests, and all of them are the same thing: polling
-Mailpit for a message that has not arrived yet, which is a loop with a bail-out
-count rather than an iteration over anything.
+Prefer `map`, `Array.from({ length }, function(_, offset) { ... })` and `forEach`
+for collection iteration. Use `while` for progression whose end cannot be counted
+in advance. Tests may use bounded `for` loops for polling with a clear timeout.
 
-**No `++`, no `+=`, no `-=`.** Zero of each, in source and tests alike.
+**No `++`, no `+=`, no `-=` in source or tests.**
 `attempt = attempt + 1` and `complaint = complaint + chunk` are what is written.
 `++` is an assignment disguised as an expression, and it reads differently
 depending on which side of the variable it lands.
 
 ## Errors
 
-**Hybrid's shared HTTP contract uses the name `error`.** This is the owner's
-explicit exception to the upstream `failed` naming below. Use
-`response.error(error)` for an explicit error response and `response.data(data)`
-for success; both helpers belong exclusively to `response`. The generic error
-middleware delegates to `response.error(error)` without a `headersSent` check.
-Status selection and payload formatting belong to that helper, as defined in
-[npm-workspace-services](../npm-workspace-services/SKILL.md#shared-express-server-contract).
+**The selected shared HTTP contract uses the name `error`.** When applying
+[npm-workspace-services](../npm-workspace-services/SKILL.md#shared-express-server-contract),
+use `response.error(error)` and `response.data(data)` exclusively on `response`.
+The generic middleware delegates to `response.error(error)` without a
+`headersSent` check. Status and payload formatting belong to that helper.
 
-**An error is an `Error` with a `status` on it, built in three lines and called
-`failed` in the upstream examples.** Twenty of them, spelled the same way every time:
+**Construct a user-facing error as an `Error` with a `status`.** Other JavaScript
+error construction and caught rejections use the name `failed`:
 
 ```js
 const failed = new Error(`Invalid email address ${ parsed }`);
@@ -259,14 +233,12 @@ throw failed;
   credential-shaped string in every log on the way out; a title is not, because
   it is still sitting in the field that refused it and it can be two hundred
   characters long.
-- **`failed` is also the name of a caught rejection in the upstream style**:
-  `.catch(function(failed) { ... })`. Hybrid's shared HTTP handlers use the
-  explicit `error` exception above.
+- Caught rejections use `.catch(function(failed) { ... })`; shared HTTP
+  handlers use the `error` interface above.
 
 ## Promises
 
-**Services chain. Tests await.** Zero `await` in 3,716 lines of source; 372 in
-the tests.
+**Services chain. Tests await.**
 
 ```js
 // a service — returned, so a rejection reaches the error handler
@@ -296,15 +268,6 @@ unhandled rejection and **node exits**. The process dies, not the request, and a
 runtime image carrying no watch and no restart policy does not come back — one
 rejected query takes the service down for everyone.
 
-Measured, not inferred. A forgotten chain answered `502`, because the service
-was gone:
-
-```
-Error: a promise rejected
-Node.js v24.13.1
-Failed running 'dist/index.js'. Waiting for file changes before restarting...
-```
-
 **This needs express 5.** express 4 does not forward a rejection at all, so
 returning the chain does not save it there.
 
@@ -315,7 +278,7 @@ everything else reject into the error handler.
 
 ## Declarations and spacing
 
-- `const` unless it is reassigned: **178 `const`, 18 `let`, 0 `var`.** A `let`
+- `const` unless it is reassigned; use `let` for reassignment and never `var`. A `let`
   is almost always one thing: a value decided by a guard that has more than one
   outcome, declared with its plainest answer and reassigned by an `if` — which
   is what this style writes instead of an `else` or a ternary.
@@ -333,10 +296,17 @@ everything else reject into the error handler.
 
 ## Imports
 
-Write ESM source. Shared libraries remain uncompiled ES modules and expose their
-root `index.js`; exposed application services bundle their own entry and imported
-library source. Do not convert library source to CommonJS to match an application's
-CommonJS output. Groups are separated by a blank line, in this order:
+Write ESM source with extensionless relative JavaScript source imports. This
+intentionally requires the application's selected bundler/resolver; unmodified
+native Node ESM resolution is not a supported source verification path.
+In the selected workspace architecture, libraries expose root `index.js` source
+and application services bundle it. Do not add library compilation, a loader,
+or a CommonJS migration to accommodate Node's resolver. Keep extensions on actual
+filenames, manifest exports targets, entrypoints, output paths and asset imports.
+Executable host test files must use imports compatible with their actual runner;
+they are distinct from bundled application source.
+
+Groups are separated by a blank line, in this order:
 
 ```js
 import { randomBytes, createHash } from 'node:crypto';
@@ -354,19 +324,15 @@ Node builtins carry the `node:` prefix — `node:crypto`, `node:test`,
 
 - A directory that holds code holds an `index.js`, and that is its entry.
 - Workspace entry points are root `index.js` files, without a `src` subfolder.
-  Import shared workspace libraries by package name, such as `@hybrid/service`,
+  Import shared workspace libraries by package name, such as `@scope/service`,
   rather than importing another workspace's internal file path or generated output.
 - Directories are kebab-case.
-- camelCase for values and functions. SCREAMING_SNAKE appears only in tests.
+- camelCase for values and functions. Use SCREAMING_SNAKE for test constants only.
 
 ## Comments
 
-**The most distinctive thing in these repositories, and denser than the last
-count said: 1,571 comment lines in 3,716 — two lines in five.** The React
-workspace is 937 in 2,492, near enough the same. The earlier figure of one in eight
-was read off a service repository before the application was written; if a file
-you are adding is under a third comment, it is probably not explaining itself
-the way its neighbours do.
+Explain intent and non-obvious constraints with comments; do not target a
+comment count or density.
 
 - Full sentences, capitalised, with full stops.
 - They say **why**, never what. A comment that restates the line below it gets
@@ -404,9 +370,12 @@ the way its neighbours do.
 
 ## Tests
 
-Hybrid uses E2E tests only, as requested by the owner in issue #3. Tests exercise
-the running stack through its public HTTP gateway and native application UI
-without mocking transport or importing application internals. Do not add unit or in-process integration tests.
+Use E2E tests only: exercise the running system through its public interfaces,
+without mocked transports or application-internal imports. Root `npm test` and
+all child test drivers run on the host. Follow the shared
+[host testing and public interfaces](../npm-workspace-services/SKILL.md#host-testing-and-public-interfaces)
+and [E2E run lifecycle](../npm-workspace-services/SKILL.md#e2e-run-lifecycle).
+Applying this language skill alone does not select a stack or require a mobile app.
 
 - `node:test` and `node:assert/strict`.
 - **A test name is a sentence about behaviour**, not a method name:
@@ -414,20 +383,18 @@ without mocking transport or importing application internals. Do not add unit or
   accepted and not sent'`.
 - The last argument to an assertion is a message saying what broke:
   `assert.equal(found.messages.length, 5, 'the rate limit did not hold at five')`.
-- The suite talks to the running stack over HTTP. Nothing about the transport
-  is mocked; infrastructure such as mail remains undecided for Hybrid.
-- **A test takes an `async function`**, and `await` is the whole point of a test
-  file: 372 of them against zero in the source. A test is a sequence of steps a
-  person reads in order.
-- **Module-level constants are SCREAMING_SNAKE, and only in tests.** The source
-  has none at all in 178 `const`; a test file opens with a handful:
+- HTTP application assertions use the configured public gateway URL; other
+  targets use their documented public protocol or UI.
+- **A test takes an `async function`** and uses `await` for ordered steps.
+- **Module-level constants are SCREAMING_SNAKE, and only in tests.** For example:
 
   ```js
   const BASE_URL = process.env.BASE_URL;
   const TODAY = dayjs.utc().format('YYYY-MM-DD');
 
-  const CREATE = `mutation CreateTask($title: String!, $planned_on: Date) {
-    createTask(title: $title, planned_on: $planned_on) { id title planned_on position }
+  // Illustrative document for an already defined public API.
+  const READ = `query Resource($id: ID!) {
+    resource(id: $id) { id }
   }`;
   ```
 
@@ -435,32 +402,21 @@ without mocking transport or importing application internals. Do not add unit or
   values a test builds as it goes. A document written once at the top is also
   what stops two tests in one file asserting against two subtly different
   queries.
-- **A test file writes its own helpers and does not import them from a sibling
-  test.** `board.test.mjs` and `create-task.test.mjs` each define the same
-  four-line `ask({ cookie, document, variables })`, deliberately: a test that
-  can be read without leaving the file is worth more than the duplication is.
-  What is shared lives in a module that is not a test — `session.mjs` signs
-  somebody in, `fixture.mjs` puts rows in with psql.
-- The `for` loops in this repository are all here, and all the same thing:
-  polling Mailpit up to fifty times for a message that has not arrived yet.
-  A bail-out count is not an iteration over anything, which is why `map` has
-  nothing to offer it.
-- **`try`/`finally` is how a test hands back what it took** — a browser page,
-  a stubbed global `fetch` — and every `try` outside `jwt.verify` is one of
-  these. The assertions go in the `try` and the giving back in the `finally`, so
-  a failed assertion still restores what the next test needs. Nothing is caught:
-  a failure is the test failing.
+- **A test file writes its own helpers and does not import a sibling test.**
+  Share fixture or session administration through non-test modules only where
+  needed, using the defined public/admin interface. Keep tests and fixtures flat
+  under `tests/e2e/`.
+- Bounded polling loops have an explicit timeout and failure result.
+- **Use `try`/`finally` to restore acquired resources or temporarily modified
+  fixtures.** Failed assertions must still restore state. Do not stub transport
+  or global `fetch`; application assertions exercise real public behavior.
 
 ---
 
 ## What this file does not settle
 
-- **Line length.** 121 of 3,716 lines exceed 80 columns and the longest is 208,
-  so 80 is a habit rather than a limit. The long ones are SQL, prose comments,
-  a component signature with ten props on it, and the inline HTML of the mail
-  template.
-- **Automated enforcement.** There is no linter. Adding one would also give it
-  opinions about the rules above.
-- **Every other language.** The `.sql` files, the CSS, the shell scripts and
-  the Dockerfiles are written to conventions nobody has written down. This file
-  deliberately does not reach for them.
+- **Line length.** There is no fixed column limit. Break long code for readability.
+- **Automated enforcement.** Do not add a linter or formatter as an incidental
+  change; preserve compatible existing tooling.
+- **Every other language.** This file does not prescribe CSS, shell, Dockerfile
+  or SQL migration syntax; consult their applicable guidance.

@@ -1,83 +1,118 @@
 # Shared coding skills
 
-Reusable instructions for coding agents working on helloIAmPau's projects.
-Each skill describes when it applies and the conventions to follow. Several
-skills contain Hybrid-specific architecture and tooling decisions; read their
-scope before applying them to another project.
+Reusable coding-agent instructions for JavaScript, React, Rust, native Expo
+applications and selected npm/Compose architectures. The collection provides
+explicit coding conventions and an issue-first GitHub workflow. Choose the skills
+that fit the task and architecture; using a language skill does not select a
+database, add a mobile application or migrate an existing project.
 
-This repository is installed as the consuming project's `.agents` directory.
-Its skills live under `.agents/skills/<skill-name>/SKILL.md`.
+Agents should read [AGENTS.md](AGENTS.md) for the collection's operating guide.
+`CLAUDE.md` is a relative link to that same file. Consuming projects retain their
+own root instructions and configuration.
 
-## Install in a project
+## Available skills
 
-From the root of a Git repository that does not already have a `.agents`
-directory:
+| Skill | Choose it for |
+| --- | --- |
+| [javascript](skills/javascript/SKILL.md) | Functions, guards, promises, comments, ESM source and host-run E2E tests |
+| [react](skills/react/SKILL.md) | Minimal components with one responsibility, JSX, state, hooks, contexts and selected server-document/browser-entry web structure |
+| [rust](skills/rust/SKILL.md) | Two-space layout, separate imports, explicit matches/returns, domain errors, typed data and async work |
+| [react-native-expo](skills/react-native-expo/SKILL.md) | Selected native apps, styling, font startup, containerized Android/Metro and host-native test drivers |
+| [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Selected npm workspaces with source libraries, bundled services, Express/GraphQL, Compose and Caddy |
+| [clickhouse](skills/clickhouse/SKILL.md) | Selected ClickHouse access, schemas derived from requirements and replay-safe numbered migrations |
+| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | An adopted issue-first agreement with implementation/publication authorization and one feature commit/PR |
+| [workspace-ownership](skills/workspace-ownership/SKILL.md) | UID `1000` ownership for authored files and touched Git metadata in privileged development environments |
+
+Combine JavaScript + React for web UI, and JavaScript + React + native for Expo
+work. Add the workspace architecture skill for repositories using that structure,
+ClickHouse for selected persistence and the GitHub workflow where adopted.
+React responsibility-based extraction takes precedence over JavaScript's
+single-caller helper rule: split independent concerns even with one caller.
+JavaScript and React treat `null` and `undefined` as equivalent absence. Prefer
+meaningful initial variable/state values; use `useState()` when state has no value
+yet. See the
+[initialization convention](skills/javascript/SKILL.md#absence-and-initialization).
+
+## Install and initialize
+
+From a consuming Git repository without an existing `.agents` directory:
 
 ```sh
 git submodule add -b master https://github.com/helloIAmPau/skills.git .agents
 git add .gitmodules .agents
 ```
 
-Commit `.gitmodules` and the `.agents` submodule reference using the project's
-publication workflow. The project pins a specific skills commit; subsequent
-changes in this repository do not automatically change that pin.
+Commit `.gitmodules` and the submodule reference through the project's authorized
+workflow. The reference pins a specific skills commit; upstream changes do not
+automatically update it. Inspect an existing `.agents` directory before choosing
+a compatible installation path.
 
-After checking out a project that already references the submodule, run:
+After cloning a project already using this submodule:
 
 ```sh
 git submodule update --init --recursive .agents
 ```
 
-Alternatively, clone the consuming project with `git clone --recurse-submodules`.
-GitHub credentials with repository access are required if access is restricted.
+Alternatively clone with `git clone --recurse-submodules`. Repository access is
+required if the remote is restricted. Installed skill entrypoints are
+`.agents/skills/<skill-name>/SKILL.md`; the collection guide is `.agents/AGENTS.md`.
+Link to that guide from the consuming project's own instructions when appropriate;
+its presence in a submodule does not establish automatic inheritance.
 
-## Use the skills
+## Invoke skills
 
-Open Codex in the consuming project. Codex discovers repository skills under
-`.agents/skills` and can select one when your task matches its description.
-In Codex CLI or the IDE extension, use `/skills` to select a skill or mention
-its name with `$` in your prompt. See the [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
-
-For example:
+Select a skill through your agent's skill interface or name it in the task:
 
 ```text
-Use $react and $javascript to review this React component.
-
-Use $react-native-expo, $react and $javascript to update the mobile screen.
-
-Use $rust to implement or review Rust code in my pul.se and Olivia style.
-
-Use $github-feature-workflow to propose the next feature issue.
+Use $javascript and $react to review this component.
+Use $javascript, $react and $react-native-expo to update this native screen.
+Use $rust to review domain errors and asynchronous initialization.
+Use $github-feature-workflow under our adopted agreement to propose a feature issue.
 ```
 
-Read the applicable `SKILL.md` before implementing or reviewing its subject.
-Follow its linked skills where the task crosses their boundaries. Project
-instructions belong in the consuming project's `AGENTS.md`; explicit owner
-instructions take precedence over skill guidance. If a changed skill does not
-appear in Codex, restart the session.
+Read the selected `SKILL.md` before applying it. Follow relevant cross-skill links
+and the consuming project's instructions; higher-priority environment instructions
+and explicit user decisions govern conflicts. Actual paths, scopes, app identifiers,
+ports, toolchains and remotes come from the consuming configuration.
 
-## Available skills
+## Development and verification
 
-| Skill | Use it for |
-| --- | --- |
-| [javascript](skills/javascript/SKILL.md) | JavaScript functions, control flow, promises, formatting, comments, modules and tests. |
-| [rust](skills/rust/SKILL.md) | Rust source conventions derived from pul.se and Olivia: two-space layout, separate imports, explicit matches and returns, domain errors, typed data and async execution. |
-| [react](skills/react/SKILL.md) | Server-rendered web documents, separate browser entries, all web UI under `components`, and React components, JSX, hooks, state, effects and contexts with one minimal responsibility. Document rendering and web styling apply only to web apps. Use alongside `javascript`. |
-| [react-native-expo](skills/react-native-expo/SKILL.md) | Hybrid's mobile workspace, native components and styling, Expo startup, development builds and device E2E tests. Use alongside `react` and `javascript`. |
-| [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Projects adopting npm workspaces, source-only libraries, bundled Express/GraphQL applications, Docker Compose and Caddy. |
-| [clickhouse](skills/clickhouse/SKILL.md) | Hybrid's ClickHouse access, entries schema, container configuration and numbered SQL migrations. |
-| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | Projects adopting the issue-first agreement: approve the issue plan, implement, run E2E tests, then approve publication of one feature commit and a PR. |
-| [workspace-ownership](skills/workspace-ownership/SKILL.md) | Preserving the standard development user's ownership of authored files and Git metadata when working from a root container. |
+The shared [development installation contract](skills/npm-workspace-services/SKILL.md#post-mount-installation-barrier)
+is: start containers with bind mounts active, install locked dependencies from
+each effective workspace root, wait for success, build/prepare native apps, start
+watchers/Metro, then confirm actual readiness. Image-build installation does not
+replace installation after mounts. Coordinate installs sharing writable paths and
+compatible native artifacts; failure prevents builds, watchers and readiness.
+Manifest/lockfile changes require stopping affected processes, successful
+installation and rebuild/restart. Host test dependencies are installed separately.
 
-Every React and React Native component must have exactly one responsibility and
-be as minimal as possible. Split independent concerns into focused components
-or hooks even when an extracted unit has only one caller. Enforce this during
-implementation and review; the details live in the React and native skills.
+All test drivers and root `npm test` run on the host. Containers may run services,
+emulators, apps and development servers. HTTP application assertions use the
+configured public URL through Caddy; native tools use published ADB, and other
+service tests use their documented public protocols. Publish only required
+development endpoints and use loopback for local access. Host and device URLs
+must be deliberately reachable; HTTP clients derive authority from the URL.
+See the [public-interface rules](skills/npm-workspace-services/SKILL.md#host-testing-and-public-interfaces).
 
-## Update a project's pinned version
+For every required E2E run, start a fresh complete applicable development stack,
+wait for readiness, run selected migrations where applicable, run the complete
+host suite, and tear down after success or failure while preserving data. Keep
+this orchestration outside test hooks/helpers. Missing prerequisites are reported
+as failures/blockers, never as passing skips. Documentation/link checks do not
+establish that a consuming stack, emulator or E2E suite passed.
 
-With a clean submodule working tree, fetch the configured `master` branch and
-review the resulting change from the consuming project's root:
+## GitHub workflow
+
+Where the agreement is adopted: propose an issue, obtain user authorization,
+implement on a matching feature branch, verify the complete E2E suite, then obtain
+publication authorization for one feature commit and a PR. Resolve remotes/base
+branches from the checkout. Reuse approvals already given; publication and merging
+have their own scope. Details live in [github-feature-workflow](skills/github-feature-workflow/SKILL.md).
+
+## Update a pinned version
+
+With a clean submodule tree, fetch the configured tracking branch and review the
+change from the consuming project's root:
 
 ```sh
 git submodule update --remote .agents
@@ -85,36 +120,34 @@ git diff --submodule=log -- .agents
 git add .agents
 ```
 
-Commit the updated reference through the project's publication workflow.
-Use `git submodule update --init --recursive .agents` to restore the version
-pinned by the consuming project instead of selecting the latest remote version.
+The installation above configures `master`; respect an intentionally different
+tracking branch. Commit the updated reference through the consuming workflow.
+`git submodule update --init --recursive .agents` restores the consuming project's
+pinned commit instead of choosing the latest remote version.
 
-## Edit or add skills
+## Contribute or maintain
 
-Work in this repository directly, or create a branch inside the `.agents`
-submodule before editing. Submodule checkouts may otherwise have a detached
-HEAD. Publish the skills commit first, then update and commit the consuming
-project's `.agents` reference so other developers can fetch that commit.
+Edit this repository directly or create a branch inside the submodule; submodule
+checkouts can have a detached HEAD. After authorized publication of the skills
+commit, update the consuming project's pin separately so others can fetch it.
 
-Keep one directory per skill under `skills/`, with a `SKILL.md` containing YAML
-frontmatter:
+Keep one package per `skills/<name>/`, with required YAML frontmatter:
 
 ```markdown
 ---
 name: example-skill
-description: Describe what the skill does and when it applies.
+description: Explain the capability and when it applies.
 ---
 
 # Example skill
 
-Instructions for the task.
+Instructions for its scope.
 ```
 
-Use clear descriptions, preserve the intended scope and explain non-obvious
-constraints. Keep supporting scripts, references or assets inside the relevant
-skill directory, and link shared guidance rather than copying it. Optional
-`agents/openai.yaml` files provide skill display and invocation metadata.
-
-Review changed instructions for conflicts and broken relative links before
-publishing. Skill files guide agents; they do not install a linter or replace
-the consuming project's required verification.
+Keep examples project-agnostic and consistent with the chosen conventions. Link
+shared execution contracts instead of duplicating recipes. Keep references inside
+the package; optional `agents/openai.yaml` provides display/invocation metadata.
+Check frontmatter, links and cross-skill consistency, and perform proportionate
+behavioral simulations when useful. Apply the UID `1000` policy to authored files
+and touched metadata. Report actual checks and unresolved decisions. Instructions
+do not install a linter or replace a consuming project's required verification.
