@@ -21,6 +21,7 @@ own root instructions and configuration.
 | [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Selected npm workspaces with source libraries, bundled services, Express/GraphQL, Compose and Caddy |
 | [clickhouse](skills/clickhouse/SKILL.md) | Selected ClickHouse access, schemas derived from requirements and replay-safe numbered migrations |
 | [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | An adopted issue-first agreement with implementation/publication authorization and one feature commit/PR |
+| [prerelease-review](skills/prerelease-review/SKILL.md) | Release change/issue tracing, test coherence and execution, code/security review, a GitHub report and owner-approved versioning/tagging |
 | [workspace-ownership](skills/workspace-ownership/SKILL.md) | UID `1000` ownership for authored files and touched Git metadata in privileged development environments |
 
 Combine JavaScript + React for web UI, and JavaScript + React + native for Expo
@@ -68,6 +69,7 @@ Use $javascript and $react to review this component.
 Use $javascript, $react and $react-native-expo to update this native screen.
 Use $rust to review domain errors and asynchronous initialization.
 Use $github-feature-workflow under our adopted agreement to propose a feature issue.
+Use $prerelease-review to analyze this project and publish its prerelease report.
 ```
 
 Read the selected `SKILL.md` before applying it. Follow relevant cross-skill links
