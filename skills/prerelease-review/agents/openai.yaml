@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prerelease Review"
+  short_description: "Audit a candidate, report findings, then release"
+  default_prompt: "Use $prerelease-review to analyze this project and publish its prerelease report for my review."
