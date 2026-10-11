@@ -1,15 +1,15 @@
 ---
 name: github-feature-workflow
-description: Coordinate development in repositories adopting an issue-first GitHub workflow, with user approval before implementation, mandatory E2E suites, and user approval after passing tests before publishing one feature commit and a PR. Use when coordinating work under this selected agreement; documentation edits alone do not adopt it. Do not impose these approval gates on unrelated projects.
+description: Coordinate development in repositories adopting an issue-first GitHub workflow, with user-approved plans, mandatory E2E suites, one feature commit and an agent-opened PR after checks pass; merging belongs to the owner. Use under this selected agreement; documentation edits alone do not adopt it. Do not impose this workflow on unrelated projects.
 ---
 
 # GitHub feature workflow
 
-Apply only where this issue-first agreement has been selected. This is the shared development agreement for developers and coding agents. GitHub issues coordinate the work. The user approves plans and decides when implementations are ready to commit and submit for review.
+Apply only where this issue-first agreement has been selected. This is the shared development agreement for developers and coding agents. GitHub issues coordinate the work. The user approves plans and merges PRs. Agents complete approved work, verify it, then publish one feature commit and an open PR without another approval gate.
 
-Read higher-priority environment instructions, the consuming project's applicable instructions and existing user authorization before acting. A plan already supplied as approved authorizes its implementation; do not reopen settled approval gates. Plan approval and commit approval are separate. Never infer approval from silence, elapsed time, passing tests, or approval of another task. Honor approvals already given without asking for them again unless the relevant plan changes materially.
+Read higher-priority environment instructions, the consuming project's applicable instructions and existing user authorization before acting. An approved plan authorizes implementation and, once the approved work and required checks are complete, its single commit, branch push and PR. Honor narrower instructions such as local work only. Never infer plan approval from silence, elapsed time, passing tests or approval of another task. Do not reopen settled approvals unless the plan changes materially. Merging remains the owner's action; do not merge or enable auto-merge.
 
-The feature lifecycle is: issue → user approval of the issue → implementation → E2E tests. Failed tests return the work to implementation and testing. Passing tests lead to a second user approval, then publication of the feature commit and pull request.
+The feature lifecycle is: issue → user approval of the plan → implementation → passing E2E tests → one feature commit → branch push and open PR → owner merges. Failed tests return the work to implementation and testing; there is no second approval gate before opening the PR.
 
 ## Repository documentation
 
@@ -48,7 +48,7 @@ this solution. Mark them as proposals rather than existing implementation.
 1. Concrete, ordered implementation steps.
 2. Add or extend the feature's E2E suite to validate its acceptance criteria against the running stack.
 3. Run E2E tests; return to implementation and rerun tests on failure.
-4. Update documentation and technical decisions, then present the passing results for user approval before publishing the PR.
+4. Update documentation and technical decisions, then publish one feature commit and an open PR with the passing results. Leave merging to the owner.
 
 ## Approval
 Awaiting explicit user approval of this plan.
@@ -108,7 +108,7 @@ Keep the feature on its own branch and preserve unrelated user changes. Do not i
 
 Implement the approved plan while sharing progress so the user can review the code and provide insights during development. Incorporate feedback within the approved scope. If feedback or discoveries materially change the scope or solution, update the issue and obtain approval for the revised portion before implementing it.
 
-Add or extend the feature's E2E suite alongside the implementation. Update the documentation and decision record where needed. Leave the implementation and tests uncommitted through testing and user review. Do not make WIP, checkpoint, automatic, or intermediate commits, including to enable remote review.
+Add or extend the feature's E2E suite alongside the implementation. Update the documentation and decision record where needed. Leave the implementation and tests uncommitted until the approved work and required verification are complete. Do not make WIP, checkpoint or intermediate commits, including to enable remote review.
 
 ## 3. Run E2E tests and return to implementation on failure
 
@@ -134,21 +134,22 @@ Always run the complete E2E suite with `npm test`, including every feature and e
 
 Tests that could not run are not passing tests. Report any environment or access blocker and resolve it within the available authorization; do not advance to publication while required E2E verification remains incomplete.
 
-## 4. Wait for user approval after tests pass
+## 4. Check the completed work before publication
 
-Once the required E2E suites pass against the current implementation, present the concrete changes and test results for user review. Wait for explicit approval to publish the feature. Issue approval, general satisfaction, passing tests, or permission to continue coding is not publication approval.
+Once the approved scope is complete and the required E2E suites pass against the current implementation, inspect the final diff and prepare the PR's change summary and test evidence. Proceed to publication without asking for a second approval. Passing tests alone do not complete unfinished acceptance criteria or authorize unrelated work.
 
-If the user requests changes, return to implementation and E2E testing before presenting the revised result for approval. Approval of the tested feature for publication authorizes the single feature commit and PR described below; do not request a redundant confirmation for those steps.
+If the user requests changes before publication, incorporate them and rerun the affected required verification, including the complete E2E lifecycle for feature changes. Obtain plan approval only for a material change beyond the approved scope. Honor an explicit request to hold publication.
 
-## 5. Commit and open the pull request after approval
+## 5. Commit, push and open the pull request
 
-Once authorized:
+Once the approved work and required verification are complete:
 
 1. Inspect the final diff and passing E2E results. Include only the approved feature's changes, and ensure the results cover the implementation being published.
 2. Create exactly one commit for the feature, including its tests and documentation. Use the matching Conventional Commit type.
 3. Describe the implemented solution in the commit body and reference the issue and any relevant subissues.
 4. Include a GitHub closing keyword for every issue fully resolved. Use `Closes #<number>`, a supported form of the requested `close` keyword. Use `Refs #<number>` for related issues that remain open.
-5. Push the feature branch and open the PR against the intended base. Describe the final solution, E2E coverage, commands and results, and include the closing references in the PR body too. Honor any narrower authorization, such as a request to commit only.
+5. Push only the feature branch and open the PR against the intended base. Describe the final solution, E2E coverage, commands and results, and include the closing references in the PR body too. Honor any narrower authorization, such as a request to commit only. Never push the feature directly to the default branch.
+6. Verify the PR and remote branch, then leave the PR open for the owner. Do not merge it, enable auto-merge or bypass branch protections.
 
 Example commit message:
 
@@ -165,7 +166,7 @@ Refs #40
 
 Only close issues and subissues actually completed. Do not close an unfinished parent merely because a subissue is resolved. Verify that the branch contains exactly one feature commit relative to its base before publishing the PR.
 
-A request to commit alone does not authorize opening a PR. A request to open a PR for existing committed work does not authorize new commits. Opening a PR does not authorize merging it.
+A request explicitly limited to committing does not authorize opening a PR. A request only to open a PR for existing committed work does not authorize additional implementation. The ordinary approved-task workflow above includes its commit and PR; merging remains the owner's action.
 
 If further changes are requested after the feature commit, keep those edits uncommitted until explicitly authorized to amend the existing commit. Preserve the one-commit rule rather than adding a second feature commit. Obtain authorization before rewriting a published branch.
 
@@ -173,7 +174,7 @@ Closing keywords take effect when the relevant work reaches the repository's def
 
 ## Handoffs
 
-State the actual issue and branch when available, E2E coverage and results, and the current stage: awaiting issue approval, implementing, testing, fixing failed tests, awaiting publication approval after passing tests, or authorized commit/PR completed. Identify any pending approval without repeating requests already satisfied. Never claim unperformed checks or unpublished GitHub actions.
+State the actual issue and branch when available, E2E coverage and results, and the current stage: awaiting plan approval, implementing, testing, fixing failed tests, or PR open awaiting the owner's merge. Link the PR after publication. Identify any narrower instruction holding publication without inventing another approval gate. Never claim unperformed checks or unpublished GitHub actions.
 
 ## References
 

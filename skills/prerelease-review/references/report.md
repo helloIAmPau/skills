@@ -80,8 +80,14 @@ When the owner replies, record their actual decision and its reference:
 selected findings and authorized follow-up issue links, or accepted report
 revision/candidate SHA and any explicitly accepted remaining risks. Do not infer
 acceptance from silence, passing tests, issue closure or a recommended bump.
+Link requested remediation issues as subissues of this report and keep their
+dispositions visible as work proceeds.
 
 Record the chosen patch/minor/major or exact target version only once provided.
-After release, append the version, release commit, tag/target SHA and actual
-publication status. Keep prior review evidence and decision history available;
-do not close the report as released before the authorized release steps succeed.
+At the release handoff, append the version, release branch/commit, final test
+evidence, tag/target SHA, tag publication state and open PR URL. The version
+commit and PR body carry `Closes #<prerelease-issue>`; leave the report open for
+GitHub to close when that work reaches the default branch. Opening the PR or
+creating a tag does not close the report. Do not replace this with manual
+closure after deployment. Record later merge, tag publication and deployment
+outcomes separately, preserving prior review evidence and decision history.

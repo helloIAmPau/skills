@@ -280,8 +280,9 @@ Keep all tests/fixtures directly in `tests/e2e/`, without feature/platform folde
 or feature-specific test commands. Do not add unit/in-process integration tests,
 mocked transports or demonstration applications under this workflow. Correct
 failures and rerun the full lifecycle; report unavailable verification honestly.
-Publication authorization is separate where
-[github-feature-workflow](../github-feature-workflow/SKILL.md) applies.
+Follow [github-feature-workflow](../github-feature-workflow/SKILL.md) where adopted:
+completed approved work with passing checks proceeds to one commit and an open
+PR; merging belongs to the owner.
 
 ## Apply and verify
 

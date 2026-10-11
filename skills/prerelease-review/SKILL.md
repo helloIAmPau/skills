@@ -1,6 +1,6 @@
 ---
 name: prerelease-review
-description: Review a release candidate against changes since the last release tag, linked issues, tests, code quality and white-box/black-box security checks; publish a GitHub prerelease report and handle the owner's subsequent release acceptance, version bump and tag. Use for prerelease analysis and its release follow-up, not ordinary feature implementation.
+description: Review a release candidate against changes since the last release tag, linked issues, tests, code quality and white-box/black-box security checks; publish a GitHub prerelease report and prepare the owner-approved version commit, tag and release PR. Use for prerelease analysis and its release follow-up, not ordinary feature implementation.
 ---
 
 # Prerelease review
@@ -23,11 +23,18 @@ Keep these stages distinct:
    review the whole first-party codebase, assess vulnerabilities and publish the
    report. Findings are proposals; leave application code, dependencies and
    existing tests unchanged.
-2. **Remediation:** the owner selects findings to address or asks for new issues.
-   Follow the consuming project's implementation and publication approvals.
-   Do not infer implementation permission from the review request.
+2. **Remediation:** discuss findings with the owner. When they request follow-up
+   work, create or reuse its issues and link them as subissues of the prerelease
+   report. Follow the consuming project's plan approval and verified-PR
+   workflow, then refresh the report after fixes land. Do not infer
+   implementation permission from the review request.
 3. **Release:** only after explicit acceptance of the report, follow
-   [release.md](references/release.md) to update the version and create the tag.
+   [release.md](references/release.md) to prepare the version commit and tag on
+   a separate release branch, push that branch and open a PR. The version commit
+   and PR body must include `Closes #<prerelease-issue>`. Leave the PR open for
+   the owner: acceptance does not authorize pushing directly to the default
+   branch, merging the PR or enabling auto-merge. Tag publication follows the
+   separate handoff in the release reference.
    If neither the bump type nor an exact target version was supplied, ask
    **"Should this be a patch, minor, or major release?"** before changing versions.
    Never infer that choice from commit types or a recommendation in the report.

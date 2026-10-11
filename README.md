@@ -20,8 +20,8 @@ own root instructions and configuration.
 | [react-native-expo](skills/react-native-expo/SKILL.md) | Selected native apps, styling, font startup, containerized Android/Metro and host-native test drivers |
 | [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Selected npm workspaces with source libraries, bundled services, Express/GraphQL, Compose and Caddy |
 | [clickhouse](skills/clickhouse/SKILL.md) | Selected ClickHouse access, schemas derived from requirements and replay-safe numbered migrations |
-| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | An adopted issue-first agreement with implementation/publication authorization and one feature commit/PR |
-| [prerelease-review](skills/prerelease-review/SKILL.md) | Release change/issue tracing, test coherence and execution, code/security review, a GitHub report and owner-approved versioning/tagging |
+| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | An adopted issue-first agreement with approved plans, tested single-commit PRs and owner-only merging |
+| [prerelease-review](skills/prerelease-review/SKILL.md) | Release change/issue tracing, test coherence and execution, code/security review, a GitHub report and an owner-approved version/tag PR |
 | [workspace-ownership](skills/workspace-ownership/SKILL.md) | UID `1000` ownership for authored files and touched Git metadata in privileged development environments |
 
 Combine JavaScript + React for web UI, and JavaScript + React + native for Expo
@@ -106,10 +106,10 @@ establish that a consuming stack, emulator or E2E suite passed.
 ## GitHub workflow
 
 Where the agreement is adopted: propose an issue, obtain user authorization,
-implement on a matching feature branch, verify the complete E2E suite, then obtain
-publication authorization for one feature commit and a PR. Resolve remotes/base
-branches from the checkout. Reuse approvals already given; publication and merging
-have their own scope. Details live in [github-feature-workflow](skills/github-feature-workflow/SKILL.md).
+implement on a matching feature branch, verify the complete E2E suite, then publish
+one feature commit and an open PR without another approval gate. Resolve remotes/base
+branches from the checkout. Honor narrower instructions; leave merging to the
+owner and never enable auto-merge. Details live in [github-feature-workflow](skills/github-feature-workflow/SKILL.md).
 
 ## Update a pinned version
 

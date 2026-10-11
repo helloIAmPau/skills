@@ -1,9 +1,11 @@
-# Accepted release: version and tag
+# Accepted release: version commit, tag and PR
 
 Read this only for the release follow-up. The owner's explicit acceptance of a
-specific prerelease report authorizes the version update, a release commit and
-creation of the release tag in that workflow. Honor a narrower instruction.
-Do not require the same acceptance again when it is already recorded.
+specific prerelease report authorizes the version update, one release commit,
+local tag creation, pushing the release branch and opening a PR after verification.
+Honor narrower instructions and reuse acceptance already given. The handoff is
+an open PR for the owner to merge. Never push directly to the default branch,
+merge the PR or enable auto-merge as part of release acceptance.
 
 ## Resolve the version choice
 
@@ -28,7 +30,8 @@ If metadata and the last tag disagree, resolve that before choosing a new value.
 
 Retrieve the report, owner acceptance, selected version, tests and open findings.
 Confirm the release checkout matches the accepted SHA and has no unrelated work
-in the release diff. Check local and remote branch/tag state.
+in the release diff. Check local and remote branch/tag state, the intended PR
+base, and existing release branches/PRs so resumed work does not create duplicates.
 
 If product code, dependencies or configuration changed after the accepted review,
 refresh the analysis, rerun the complete required suites and affected security
@@ -42,6 +45,11 @@ blocker precisely. If no usable prerelease report exists, run the review stage
 first and present its results rather than manufacturing prior acceptance.
 
 ## Update and verify
+
+Create or resume a separate release branch for the prerelease issue, following
+the consuming project's branch conventions. Start from the accepted candidate;
+preserve unrelated local work, using an isolated checkout when necessary. Never
+make the version commit on the default branch.
 
 Identify authoritative version files and their dependents: root/package/workspace
 manifests, lockfile metadata, runtime version constants and established changelog
@@ -60,34 +68,66 @@ the final versioned tree, with its mandated lifecycle. If this reveals defects
 requiring product changes, return to remediation and candidate review. A pure,
 verified version bump already authorized by acceptance needs no repeated approval.
 
-## Commit, tag and verify
+## Commit, prepare the tag and open the PR
 
-1. Commit only the authorized version/release changes using the established
-   convention, for example `chore(release): prepare <version>`, with a reference
-   to the prerelease issue. Stage explicit paths, not unrelated work.
-2. Resolve the exact release commit after any required approved merge workflow.
-   The tag must identify that final tested release commit, not the pre-bump SHA
-   or an unmerged feature candidate. If merging changes the tested content,
-   refresh verification and any affected acceptance.
+1. Stage only the authorized version/release files and create exactly one
+   Conventional Commit, for example `chore(release): prepare <version>`. Its
+   body **must include `Closes #<prerelease-issue>`**, not only `Refs`. Preserve
+   the project's conventions for other issue/subissue references; do not close
+   unfinished remediation issues.
+2. Verify that the release commit's complete tree matches the final tested
+   versioned tree, including any changes from commit hooks. Unexpected changes
+   require verification before publication.
 3. Check whether the tag exists locally or remotely. Reuse an already completed
    matching release on retries; if the tag targets different content, stop and
    report the conflict. Never force-move, delete or overwrite a release tag.
-4. Create an annotated tag (or follow the project's signing convention), naming
-   the version and report issue. Verify the tag's resolved commit and complete
-   tree against the tested release tree, including any changes from commit hooks.
-   Unexpected tree changes require verification before release publication.
-5. Follow existing authorization for remote publication. Acceptance alone
-   authorizes the local commit/tag; pushing refs, opening/merging a PR, creating
-   a GitHub Release, package publication and deployment require their own
-   existing authorization or an explicitly adopted release policy. Reuse any
-   such authorization rather than asking again. Push only the intended release
-   branch/ref and tag, never every local tag, and never force-push.
-6. For authorized publication, verify remote refs and report partial failures
-   honestly. Resume from actual state without duplicating commits/tags. Keep a
-   local-only release clearly labelled as such; do not imply it was published.
-7. Update the prerelease issue with the decision reference, final test evidence,
-   version, commit/tag and publication state. Close it only when its agreed
-   release scope is complete. Report what succeeded and any pending action.
+4. Create an annotated local tag (or follow the project's signing convention)
+   on the tested **version commit**, naming the version and report issue. Verify
+   its resolved commit and tree. Keep the tag local until the owner merges the
+   PR unless the owner explicitly chooses earlier tag publication; pushing a
+   tag may deploy even while its PR is open.
+5. Push only the release branch and open a PR against the intended base. Put
+   `Closes #<prerelease-issue>` in the PR body as well, alongside the accepted
+   report, selected version, exact test evidence and tag target/publication
+   state. Do not push the default branch or use a blanket tag push.
+6. Verify the remote branch and open PR. Update the prerelease issue with the
+   decision reference, final tests, version, release commit, tag status and PR
+   URL. Hand the PR to the owner and stop; do not merge or enable auto-merge.
+
+Example release commit:
+
+```text
+chore(release): prepare <version>
+
+Synchronize the version metadata for the accepted prerelease candidate.
+
+Closes #<prerelease-issue>
+```
+
+The closing reference completes the prerelease issue when the commit reaches
+the repository's default branch. Creating a local commit/tag or opening the PR
+does not close it. Do not manually close the report or substitute deployment
+completion for the commit's closing reference. If a project targets another
+base branch, explain that GitHub closure waits until the default branch is
+reached. Preserve the closing reference in any owner-edited merge message.
+
+## After the owner merges
+
+Confirm the actual merge and release target before publishing the prepared tag.
+If review changes the tagged commit or squash/rebase replaces it, resolve the
+target with the owner before publication; never publish a stale tag or silently
+move an existing one. Changes to tested content require refreshed verification
+and any affected acceptance.
+
+Follow existing owner authorization and the project's release policy for tag
+publication and its deployment effects. Reuse authorization already given;
+creating a GitHub Release or publishing packages remains separate scope. Push
+only the intended tag, verify its remote target and record actual publication
+and deployment results. Issue closure from the merged version commit is not
+proof of successful deployment. Report failures or pending jobs accurately
+without treating the report as still awaiting its version commit.
 
 [Git tag documentation](https://git-scm.com/docs/git-tag) defines annotated and
 signed tags. Preserve the project's existing identity/signing configuration.
+[GitHub closing keywords](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue)
+define when the prerelease issue closes.
