@@ -13,9 +13,8 @@ This skill defines JavaScript conventions, not architecture. Apply
 [npm-workspace-services](../npm-workspace-services/SKILL.md) only when that
 architecture is selected. Its libraries export source and its application services
 bundle it; language-skill use alone must not scaffold infrastructure or change architecture.
-Use [clickhouse](../clickhouse/SKILL.md) only for selected ClickHouse persistence.
-SQL examples here illustrate JavaScript structure; derive parameter syntax from
-the actual database. CSS, shell, Dockerfiles and SQL migrations have separate conventions.
+Use [sql](../sql/SKILL.md) for SQL queries and migrations, including SQL embedded
+in JavaScript. CSS, shell and Dockerfiles have separate conventions.
 
 ## The shape of a function
 
@@ -139,22 +138,15 @@ it summarises does.
 
 ```js
 // no: a helper nobody else calls
-function upsert(email, timezone) {
-  return query(`insert into users ...`, [ email, timezone ]);
+function readProfile(userId) {
+  return fetch(`/profiles/${ userId }`);
 }
 
-upsert(email, timezone).then(function({ id }) { ... });
+readProfile(userId).then(function(response) { ... });
 
-// yes: the query, where it is wanted; timezone was already validated
-query(`
-  insert into users (email, timezone) values ($1, coalesce($2, 'UTC'))
-  on conflict (email) do update set timezone = coalesce($2, users.timezone)
-  returning id
-`, [ email, timezone ]).then(function([ { id } ]) { ... });
+// yes: the operation, where it is wanted; userId is a validated UUID
+fetch(`/profiles/${ userId }`).then(function(response) { ... });
 ```
-
-The example assumes `timezone` has already been validated for the query contract.
-Pass it directly; do not normalize an absent value with `timezone || null`.
 
 Extract when a **second** caller appears, not in anticipation of one. For React
 components and hooks, follow the [single-responsibility extraction rule](../react/SKILL.md#one-scope-per-component-always),
@@ -349,25 +341,6 @@ comment count or density.
 - A rule with its reason attached survives a case it did not anticipate. That
   is the whole argument for the density.
 
-## SQL
-
-- Lowercase keywords, snake_case identifiers.
-- **Values are always parameters.** Interpolating into the text is a review
-  blocker, not a style preference.
-- **A statement spanning lines is a template literal**, one clause per line,
-  so the shape of the query is visible in the shape of the source:
-
-  ```js
-  query(`
-    update login_tokens set consumed_at = now()
-    where token_hash = $1 and consumed_at is null and expires_at > now()
-    returning user_id
-  `, [ hash(token) ])
-  ```
-
-- Migrations are numbered `.sql` files, applied once, never edited after they
-  ship. A mistake is a new file.
-
 ## Tests
 
 Use E2E tests only: exercise the running system through its public interfaces,
@@ -418,5 +391,5 @@ Applying this language skill alone does not select a stack or require a mobile a
 - **Line length.** There is no fixed column limit. Break long code for readability.
 - **Automated enforcement.** Do not add a linter or formatter as an incidental
   change; preserve compatible existing tooling.
-- **Every other language.** This file does not prescribe CSS, shell, Dockerfile
-  or SQL migration syntax; consult their applicable guidance.
+- **Every other language.** Use [sql](../sql/SKILL.md) for SQL query and migration
+  conventions; consult the applicable guidance for CSS, shell and Dockerfiles.
