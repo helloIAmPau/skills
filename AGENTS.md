@@ -12,7 +12,8 @@ when needed. Do not load unrelated guidance simply because it exists.
 
 Combine language, UI, architecture and workflow skills when their scopes apply.
 JavaScript + React covers web UI; JavaScript + React + native covers selected Expo
-apps. Rust guides Rust source. Architecture skills apply only to selected
+apps. Rust guides Rust source. SQL guides queries and migrations independently
+of their host language. Architecture skills apply only to selected
 architectures: language/UI work alone does not authorize scaffolding, a mobile
 workspace, a database or an architecture migration.
 

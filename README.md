@@ -1,6 +1,6 @@
 # Shared coding skills
 
-Reusable coding-agent instructions for JavaScript, React, Rust, native Expo
+Reusable coding-agent instructions for JavaScript, SQL, React, Rust, native Expo
 applications and selected npm/Compose architectures. The collection provides
 explicit coding conventions and an issue-first GitHub workflow. Choose the skills
 that fit the task and architecture; using a language skill does not select a
@@ -15,6 +15,7 @@ own root instructions and configuration.
 | Skill | Choose it for |
 | --- | --- |
 | [javascript](skills/javascript/SKILL.md) | Functions, guards, promises, comments, ESM source and host-run E2E tests |
+| [sql](skills/sql/SKILL.md) | Readable queries, minimal nesting, named WITH stages, parameters, transactions and numbered migrations |
 | [react](skills/react/SKILL.md) | Minimal components with one responsibility, JSX, state, hooks, contexts and selected server-document/browser-entry web structure |
 | [rust](skills/rust/SKILL.md) | Two-space layout, separate imports, explicit matches/returns, domain errors, typed data and async work |
 | [react-native-expo](skills/react-native-expo/SKILL.md) | Selected native apps, styling, font startup, containerized Android/Metro and host-native test drivers |
@@ -25,8 +26,9 @@ own root instructions and configuration.
 | [workspace-ownership](skills/workspace-ownership/SKILL.md) | UID `1000` ownership for authored files and touched Git metadata in privileged development environments |
 
 Combine JavaScript + React for web UI, and JavaScript + React + native for Expo
-work. Add the workspace architecture skill for repositories using that structure,
-ClickHouse for selected persistence and the GitHub workflow where adopted.
+work. Add SQL for queries and migrations in any host language, the workspace
+architecture skill for repositories using that structure, ClickHouse for selected
+persistence and the GitHub workflow where adopted.
 React responsibility-based extraction takes precedence over JavaScript's
 single-caller helper rule: split independent concerns even with one caller.
 JavaScript and React treat `null` and `undefined` as equivalent absence. Prefer
@@ -68,6 +70,7 @@ Select a skill through your agent's skill interface or name it in the task:
 Use $javascript and $react to review this component.
 Use $javascript, $react and $react-native-expo to update this native screen.
 Use $rust to review domain errors and asynchronous initialization.
+Use $sql to simplify nested queries with named CTEs and readable transactions.
 Use $github-feature-workflow under our adopted agreement to propose a feature issue.
 Use $prerelease-review to analyze this project and publish its prerelease report.
 ```
