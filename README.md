@@ -2,7 +2,7 @@
 
 Reusable coding-agent instructions for JavaScript, React, Rust, native Expo
 applications and selected npm/Compose architectures. The collection provides
-explicit coding conventions and an issue-first GitHub workflow. Choose the skills
+explicit coding conventions and a documentation-first GitHub workflow. Choose the skills
 that fit the task and architecture; using a language skill does not select a
 database, add a mobile application or migrate an existing project.
 
@@ -20,12 +20,12 @@ own root instructions and configuration.
 | [react-native-expo](skills/react-native-expo/SKILL.md) | Selected native apps, styling, font startup, containerized Android/Metro and host-native test drivers |
 | [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Selected npm workspaces with source libraries, bundled services, Express/GraphQL, Compose and Caddy |
 | [clickhouse](skills/clickhouse/SKILL.md) | Selected ClickHouse access, schemas derived from requirements and replay-safe numbered migrations |
-| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | An adopted issue-first agreement with implementation/publication authorization and one feature commit/PR |
+| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | Documentation-first workflow: `docs/` specification, approvals, one feature commit/PR |
 | [workspace-ownership](skills/workspace-ownership/SKILL.md) | UID `1000` ownership for authored files and touched Git metadata in privileged development environments |
 
 Combine JavaScript + React for web UI, and JavaScript + React + native for Expo
 work. Add the workspace architecture skill for repositories using that structure,
-ClickHouse for selected persistence and the GitHub workflow where adopted.
+ClickHouse for selected persistence and the GitHub workflow in repositories with a `docs/README.md`.
 React responsibility-based extraction takes precedence over JavaScript's
 single-caller helper rule: split independent concerns even with one caller.
 JavaScript and React treat `null` and `undefined` as equivalent absence. Prefer
@@ -56,7 +56,7 @@ git submodule update --init --recursive .agents
 Alternatively clone with `git clone --recurse-submodules`. Repository access is
 required if the remote is restricted. Installed skill entrypoints are
 `.agents/skills/<skill-name>/SKILL.md`; the collection guide is `.agents/AGENTS.md`.
-Link to that guide from the consuming project's own instructions when appropriate;
+Link to that guide from the consuming project's `docs/README.md` when appropriate;
 its presence in a submodule does not establish automatic inheritance.
 
 ## Invoke skills
@@ -67,7 +67,7 @@ Select a skill through your agent's skill interface or name it in the task:
 Use $javascript and $react to review this component.
 Use $javascript, $react and $react-native-expo to update this native screen.
 Use $rust to review domain errors and asynchronous initialization.
-Use $github-feature-workflow under our adopted agreement to propose a feature issue.
+Use $github-feature-workflow to draft a feature document.
 ```
 
 Read the selected `SKILL.md` before applying it. Follow relevant cross-skill links
@@ -103,9 +103,10 @@ establish that a consuming stack, emulator or E2E suite passed.
 
 ## GitHub workflow
 
-Where the agreement is adopted: propose an issue, obtain user authorization,
-implement on a matching feature branch, verify the complete E2E suite, then obtain
-publication authorization for one feature commit and a PR. Resolve remotes/base
+In repositories with a `docs/README.md`: write or update the feature document in
+`docs/`, obtain user approval, implement on a matching feature branch, verify the
+complete E2E suite, then obtain publication authorization for one feature commit
+and a PR; the commit references the document with a `Docs:` trailer. Resolve remotes/base
 branches from the checkout. Reuse approvals already given; publication and merging
 have their own scope. Details live in [github-feature-workflow](skills/github-feature-workflow/SKILL.md).
 

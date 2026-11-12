@@ -27,8 +27,8 @@ application services distinct.
 Respect higher-priority execution-environment instructions, the user's explicit
 decisions and the consuming project's applicable instructions. Reuse authorization
 already given; do not invent or repeatedly request approval. Apply
-[github-feature-workflow](skills/github-feature-workflow/SKILL.md) only where that
-agreement is adopted. Implementation, commits, PRs, image/site publication and
+[github-feature-workflow](skills/github-feature-workflow/SKILL.md) in repositories
+with a `docs/README.md`. Implementation, commits, PRs, image/site publication and
 merging have distinct authorization scopes.
 
 Resolve paths, package scopes, app identifiers, environment settings, toolchain
@@ -38,7 +38,7 @@ and resume a matching feature branch when continuing work.
 
 When installed as `.agents`, entrypoints live at
 `.agents/skills/<name>/SKILL.md`, with this guide at `.agents/AGENTS.md`.
-A consuming project's own root `AGENTS.md` still governs that project. Do not
+A consuming project's `docs/README.md` still governs that project. Do not
 claim this submodule guide is automatically inherited; reference it explicitly
 through the consuming instructions or task where needed. Within this collection,
 paths in links are relative to the containing file.
