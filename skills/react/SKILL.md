@@ -442,5 +442,5 @@ renders an error view using system fonts. Keep that view independent of success-
   no fixed column threshold is prescribed.
 - **Automated enforcement.** Component scope and minimality remain review checks
   regardless of lint tooling; do not add tooling incidentally.
-- **What each component is for.** The project's `docs/README.md` defines the product
+- **What each component is for.** The project's `AGENTS.md` defines the product
   architecture and component boundaries.
