@@ -157,8 +157,8 @@ API contract requires them; these conventions do not prohibit required traits.
 - Compose readable strings with `format!`; use raw multiline strings for
   substantial prompts or text templates. Keep wire format, schemas and prompt
   policy specific to the consuming application.
-- Use parameterized database calls with values supplied separately. Derive
-  query capabilities and permissions from the selected persistence contract.
+- Follow [sql](../sql/SKILL.md) for SQL queries and migrations. Derive query
+  capabilities and permissions from the selected persistence contract.
 
 ## Comments, Cargo and verification
 

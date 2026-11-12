@@ -12,7 +12,8 @@ when needed. Do not load unrelated guidance simply because it exists.
 
 Combine language, UI, architecture and workflow skills when their scopes apply.
 JavaScript + React covers web UI; JavaScript + React + native covers selected Expo
-apps. Rust guides Rust source. Architecture skills apply only to selected
+apps. Rust guides Rust source. SQL guides queries and migrations independently
+of their host language. Architecture skills apply only to selected
 architectures: language/UI work alone does not authorize scaffolding, a mobile
 workspace, a database or an architecture migration.
 
@@ -28,8 +29,10 @@ Respect higher-priority execution-environment instructions, the user's explicit
 decisions and the consuming project's applicable instructions. Reuse authorization
 already given; do not invent or repeatedly request approval. Apply
 [github-feature-workflow](skills/github-feature-workflow/SKILL.md) in repositories
-with a `docs/README.md`. Implementation, commits, PRs, image/site publication and
-merging have distinct authorization scopes.
+with a `docs/README.md`. Under it, an approved feature document includes publishing
+one commit and a PR after the required verification; merging remains the owner's
+action. Honor narrower instructions. Image/site publication and deployment retain
+their own authorization scope.
 
 Resolve paths, package scopes, app identifiers, environment settings, toolchain
 versions, ports, services and Git remotes/base branches from the current checkout.

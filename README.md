@@ -1,6 +1,6 @@
 # Shared coding skills
 
-Reusable coding-agent instructions for JavaScript, React, Rust, native Expo
+Reusable coding-agent instructions for JavaScript, SQL, React, Rust, native Expo
 applications and selected npm/Compose architectures. The collection provides
 explicit coding conventions and a documentation-first GitHub workflow. Choose the skills
 that fit the task and architecture; using a language skill does not select a
@@ -15,17 +15,20 @@ own root instructions and configuration.
 | Skill | Choose it for |
 | --- | --- |
 | [javascript](skills/javascript/SKILL.md) | Functions, guards, promises, comments, ESM source and host-run E2E tests |
+| [sql](skills/sql/SKILL.md) | Readable queries, minimal nesting, named WITH stages, parameters, transactions and numbered migrations |
 | [react](skills/react/SKILL.md) | Minimal components with one responsibility, JSX, state, hooks, contexts and selected server-document/browser-entry web structure |
 | [rust](skills/rust/SKILL.md) | Two-space layout, separate imports, explicit matches/returns, domain errors, typed data and async work |
 | [react-native-expo](skills/react-native-expo/SKILL.md) | Selected native apps, styling, font startup, containerized Android/Metro and host-native test drivers |
 | [npm-workspace-services](skills/npm-workspace-services/SKILL.md) | Selected npm workspaces with source libraries, bundled services, Express/GraphQL, Compose and Caddy |
 | [clickhouse](skills/clickhouse/SKILL.md) | Selected ClickHouse access, schemas derived from requirements and replay-safe numbered migrations |
-| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | Documentation-first workflow: `docs/` specification, approvals, one feature commit/PR |
+| [github-feature-workflow](skills/github-feature-workflow/SKILL.md) | Documentation-first workflow: approved `docs/` specification, tested single-commit PRs and owner-only merging |
+| [prerelease-review](skills/prerelease-review/SKILL.md) | Release change/issue tracing, test coherence and execution, code/security review, a GitHub report and an owner-approved version/tag PR |
 | [workspace-ownership](skills/workspace-ownership/SKILL.md) | UID `1000` ownership for authored files and touched Git metadata in privileged development environments |
 
 Combine JavaScript + React for web UI, and JavaScript + React + native for Expo
-work. Add the workspace architecture skill for repositories using that structure,
-ClickHouse for selected persistence and the GitHub workflow in repositories with a `docs/README.md`.
+work. Add SQL for queries and migrations in any host language, the workspace
+architecture skill for repositories using that structure, ClickHouse for selected
+persistence and the GitHub workflow in repositories with a `docs/README.md`.
 React responsibility-based extraction takes precedence over JavaScript's
 single-caller helper rule: split independent concerns even with one caller.
 JavaScript and React treat `null` and `undefined` as equivalent absence. Prefer
@@ -67,7 +70,9 @@ Select a skill through your agent's skill interface or name it in the task:
 Use $javascript and $react to review this component.
 Use $javascript, $react and $react-native-expo to update this native screen.
 Use $rust to review domain errors and asynchronous initialization.
+Use $sql to simplify nested queries with named CTEs and readable transactions.
 Use $github-feature-workflow to draft a feature document.
+Use $prerelease-review to analyze this project and publish its prerelease report.
 ```
 
 Read the selected `SKILL.md` before applying it. Follow relevant cross-skill links
@@ -105,10 +110,10 @@ establish that a consuming stack, emulator or E2E suite passed.
 
 In repositories with a `docs/README.md`: write or update the feature document in
 `docs/`, obtain user approval, implement on a matching feature branch, verify the
-complete E2E suite, then obtain publication authorization for one feature commit
-and a PR; the commit references the document with a `Docs:` trailer. Resolve remotes/base
-branches from the checkout. Reuse approvals already given; publication and merging
-have their own scope. Details live in [github-feature-workflow](skills/github-feature-workflow/SKILL.md).
+complete E2E suite, then publish one feature commit and an open PR without another
+approval gate; the commit references the document with a `Docs:` trailer. Resolve
+remotes/base branches from the checkout. Honor narrower instructions; leave merging
+to the owner and never enable auto-merge. Details live in [github-feature-workflow](skills/github-feature-workflow/SKILL.md).
 
 ## Update a pinned version
 

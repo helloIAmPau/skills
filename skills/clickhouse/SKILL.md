@@ -7,7 +7,9 @@ description: Maintain selected ClickHouse persistence, typed Node client access,
 
 Apply when ClickHouse has been selected. Derive schema, authentication, application
 permissions and write guarantees from the consuming project's approved contracts;
-this skill does not select persistence for another application.
+this skill does not select persistence for another application. Follow
+[sql](../sql/SKILL.md) for query structure, parameters and migration conventions;
+the ClickHouse-specific capabilities and guarantees below still apply.
 
 ## Database access and schema
 
@@ -17,10 +19,8 @@ this skill does not select persistence for another application.
 - Create one module-level official Node client using the configured endpoint,
   illustrated as `CLICKHOUSE_URL`. Export `query(text, values)`, binding named,
   typed placeholders such as `{date:Date}` through `query_params` and parsing
-  `JSONEachRow`. Do not interpolate user values into SQL.
-- Keep domain projections with domain code and resolvers thin. Use lowercase SQL
-  keywords and snake_case identifiers; preserve case-sensitive ClickHouse types,
-  engines and function names.
+  `JSONEachRow`.
+- Keep domain projections with domain code and resolvers thin.
 - Derive tables, columns, enum values, units and validation from actual requirements.
   Do not install a product-specific schema. Preserve optional measurements as
   nullable fields when absence is meaningful rather than inventing default zeros.
